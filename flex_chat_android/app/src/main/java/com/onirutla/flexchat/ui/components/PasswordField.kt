@@ -1,7 +1,6 @@
 package com.onirutla.flexchat.ui.components
 
 import android.content.res.Configuration
-import androidx.compose.foundation.text.KeyboardActionScope
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -16,8 +15,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
@@ -27,13 +24,15 @@ import com.onirutla.flexchat.ui.theme.FlexChatTheme
 @Composable
 fun PasswordField(
     modifier: Modifier = Modifier,
-    password: String,
     onPasswordChange: (String) -> Unit,
     onPasswordVisibleChange: (Boolean) -> Unit,
+    label: String = stringResource(id = R.string.password),
+    password: String,
+    isError: Boolean = false,
     isPasswordVisible: Boolean,
     errorMessage: String = "",
-    isError: Boolean = false,
-    onDone: KeyboardActionScope.() -> Unit,
+    keyboardActions: KeyboardActions,
+    keyboardOptions: KeyboardOptions,
 ) {
     OutlinedTextField(
         modifier = modifier,
@@ -47,20 +46,15 @@ fun PasswordField(
         },
         singleLine = true,
         shape = MaterialTheme.shapes.medium,
-        label = { Text(text = stringResource(R.string.password)) },
+        label = { Text(text = label) },
         visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-        keyboardOptions = KeyboardOptions(
-            keyboardType = KeyboardType.Password,
-            imeAction = ImeAction.Done
-        ),
-        keyboardActions = KeyboardActions(onDone = onDone),
+        keyboardOptions = keyboardOptions,
+        keyboardActions = keyboardActions,
         leadingIcon = {
-            IconButton(onClick = {}) {
-                Icon(
-                    imageVector = Icons.Rounded.Password,
-                    contentDescription = stringResource(id = R.string.password),
-                )
-            }
+            Icon(
+                imageVector = Icons.Rounded.Password,
+                contentDescription = stringResource(id = R.string.password),
+            )
         },
         trailingIcon = {
             IconButton(
@@ -85,7 +79,8 @@ private fun PasswordFieldPreview() {
     FlexChatTheme {
         PasswordField(
             isPasswordVisible = true,
-            onDone = {},
+            keyboardOptions = KeyboardOptions(),
+            keyboardActions = KeyboardActions(),
             onPasswordChange = {},
             onPasswordVisibleChange = {},
             password = "asdfasdf",

@@ -7,4 +7,9 @@
     <string name="don_t_have_account_register">Don\'t have account register</string>
     <string name="login_to_start_chatting">Login to start chatting</string>
     <string name="welcome_to">Welcome to %1$s</string>
+    <string name="default_notification_channel_id">default_notification_channel_id</string>
+    <string name="register">Register</string>
+    <string name="register_to_start_chatting">Register to start chatting</string>
+    <string name="confirm_password">Confirm Password</string>
+    <string name="have_an_account_login">Have an account? Login</string>
 </resources>

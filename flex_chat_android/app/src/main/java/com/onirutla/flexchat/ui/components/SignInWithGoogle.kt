@@ -2,8 +2,8 @@ package com.onirutla.flexchat.ui.components
 
 import android.content.res.Configuration
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color

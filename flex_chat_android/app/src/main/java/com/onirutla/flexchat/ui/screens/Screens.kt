@@ -1,5 +1,7 @@
 package com.onirutla.flexchat.ui.screens
 
-object Screens {
-    const val MAIN_SCREEN = "/"
+sealed class Screens(val route: String) {
+    data object MainScreen : Screens("/")
+    data object LoginScreen : Screens("/users/login")
+    data object RegisterScreen : Screens("/users/register")
 }

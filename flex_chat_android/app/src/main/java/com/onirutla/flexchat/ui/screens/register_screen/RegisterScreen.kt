@@ -1,6 +1,5 @@
-package com.onirutla.flexchat.ui.screens.login_screen
+package com.onirutla.flexchat.ui.screens.register_screen
 
-import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -35,11 +34,11 @@ import com.onirutla.flexchat.ui.components.PasswordField
 import com.onirutla.flexchat.ui.theme.FlexChatTheme
 
 @Composable
-fun LoginScreen(
+fun RegisterScreen(
     modifier: Modifier = Modifier,
-    state: LoginScreenState,
-    onEvent: (LoginScreenEvent) -> Unit,
-    onUiEvent: (LoginScreenUiEvent) -> Unit,
+    state: RegisterScreenState,
+    onEvent: (RegisterScreenEvent) -> Unit,
+    onUiEvent: (RegisterScreenUiEvent) -> Unit,
 ) {
     Scaffold(
         modifier = modifier
@@ -84,7 +83,7 @@ fun LoginScreen(
                         style = MaterialTheme.typography.headlineLarge
                     )
                     Text(
-                        text = stringResource(R.string.login_to_start_chatting),
+                        text = stringResource(R.string.register_to_start_chatting),
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
@@ -101,43 +100,60 @@ fun LoginScreen(
                     modifier = Modifier.fillMaxWidth(),
                     email = state.email,
                     isError = state.isEmailError ?: false,
-                    onEmailChange = { onEvent(LoginScreenEvent.OnEmailChange(it)) },
+                    onEmailChange = { onEvent(RegisterScreenEvent.OnEmailChange(it)) },
                     onNext = { defaultKeyboardAction(imeAction = ImeAction.Next) }
                 )
                 PasswordField(
                     modifier = Modifier.fillMaxWidth(),
                     password = state.password,
                     isError = state.isPasswordError ?: false,
-                    onPasswordChange = { onEvent(LoginScreenEvent.OnPasswordChange(it)) },
+                    onPasswordChange = { onEvent(RegisterScreenEvent.OnPasswordChange(it)) },
                     isPasswordVisible = state.isPasswordVisible,
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Password,
-                        imeAction = ImeAction.Done
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(onNext = { defaultKeyboardAction(imeAction = ImeAction.Next) }),
+                    onPasswordVisibleChange = {
+                        onEvent(RegisterScreenEvent.OnIsPasswordVisibleChange(it))
+                    },
+                )
+                PasswordField(
+                    modifier = Modifier.fillMaxWidth(),
+                    label = stringResource(R.string.confirm_password),
+                    password = state.confirmPassword,
+                    isError = state.isConfirmPasswordError ?: false,
+                    onPasswordChange = { onEvent(RegisterScreenEvent.OnPasswordChange(it)) },
+                    isPasswordVisible = state.isConfirmPasswordVisible,
+                    onPasswordVisibleChange = {
+                        onEvent(RegisterScreenEvent.OnIsConfirmPasswordVisibleChange(it))
+                    },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done,
                     ),
                     keyboardActions = KeyboardActions(
                         onDone = {
-                            onEvent(LoginScreenEvent.OnLoginClicked)
                             defaultKeyboardAction(imeAction = ImeAction.Done)
+                            onEvent(RegisterScreenEvent.OnRegisterClick)
                         },
                     ),
-                    onPasswordVisibleChange = {
-                        onEvent(LoginScreenEvent.OnIsPasswordVisibleChange(it))
-                    },
                 )
-                TextButton(onClick = { onUiEvent(LoginScreenUiEvent.OnForgotPasswordClick) }) {
-                    Text(text = stringResource(R.string.forgot_password))
-                }
                 Button(
                     modifier = Modifier.fillMaxWidth(),
-                    onClick = { onEvent(LoginScreenEvent.OnLoginClicked) }
+                    onClick = { onEvent(RegisterScreenEvent.OnRegisterClick) }
                 ) {
-                    Text(text = stringResource(R.string.login))
+                    Text(text = stringResource(R.string.register))
                 }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center
                 ) {
-                    GoogleIconButton(modifier = Modifier, iconSize = 35.dp, onClick = {})
+                    GoogleIconButton(
+                        modifier = Modifier,
+                        iconSize = 35.dp,
+                        onClick = { onUiEvent(RegisterScreenUiEvent.OnRegisterWithGoogleClick) }
+                    )
                 }
             }
             Column(
@@ -147,19 +163,35 @@ fun LoginScreen(
                 verticalArrangement = Arrangement.SpaceBetween,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                TextButton(onClick = {}) {
-                    Text(text = stringResource(R.string.don_t_have_account_register))
+                TextButton(onClick = { onUiEvent(RegisterScreenUiEvent.OnHaveAnAccountClick) }) {
+                    Text(text = stringResource(R.string.have_an_account_login))
                 }
             }
         }
     }
 }
 
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL)
+@Preview
 @Composable
-private fun LoginScreenPreview() {
+private fun RegisterScreenPreview() {
     FlexChatTheme {
-        LoginScreen(state = LoginScreenState(), onEvent = {}, onUiEvent = {})
+        RegisterScreen(
+            state = RegisterScreenState(
+                email = "frances.randall@example.com",
+                isEmailError = null,
+                password = "graece",
+                isPasswordError = null,
+                isPasswordVisible = false,
+                confirmPassword = "eu",
+                isConfirmPasswordError = null,
+                isConfirmPasswordVisible = false,
+                isRegisterSuccessful = null,
+                registerErrorMessage = "epicuri",
+                isRegisterWithGoogleSuccessful = null,
+                registerWithGoogleErrorMessage = "mollis"
+            ),
+            onEvent = {},
+            onUiEvent = {}
+        )
     }
 }

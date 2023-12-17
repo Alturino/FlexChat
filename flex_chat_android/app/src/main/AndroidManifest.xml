@@ -15,6 +15,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.FlexChat"
         tools:targetApi="31">
+        <meta-data
+            android:name="firebase_performance_logcat_enabled"
+            android:value="true" />
         <activity
             android:name=".ui.MainActivity"
             android:exported="true"

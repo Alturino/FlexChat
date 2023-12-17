@@ -75,7 +75,6 @@ dependencies {
 
     // Material
     implementation(libs.androidx.material.icons.extended)
-    implementation(libs.androidx.material)
 
     // Firebase
     implementation(platform(libs.firebase.bom))

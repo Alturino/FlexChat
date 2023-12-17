@@ -1,6 +1,5 @@
 package com.onirutla.flexchat.ui.components
 
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardActionScope
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -28,7 +27,7 @@ fun EmailField(
     onNext: KeyboardActionScope.() -> Unit,
 ) {
     OutlinedTextField(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier,
         value = email,
         isError = isError,
         supportingText = {
