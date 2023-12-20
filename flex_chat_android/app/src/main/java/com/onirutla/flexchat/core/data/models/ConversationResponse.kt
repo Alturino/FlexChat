@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2023 - 2023 Ricky Alturino
+ * Copyright (c) 2023 Ricky Alturino
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,13 +24,38 @@
 
 package com.onirutla.flexchat.core.data.models
 
-data class Message(
+import com.google.firebase.firestore.IgnoreExtraProperties
+import com.google.firebase.firestore.ServerTimestamp
+import com.onirutla.flexchat.domain.models.Conversation
+import com.onirutla.flexchat.domain.models.ConversationMember
+import com.onirutla.flexchat.domain.models.Message
+import java.util.Date
+
+@IgnoreExtraProperties
+data class ConversationResponse(
     val id: String = "",
-    val conversationId: String = "",
-    val conversationMemberId: String = "",
-    val userId: String = "",
-    val senderName: String = "",
-    val messageBody: String = "",
-    val createdAt: String = "",
-    val deletedAt: String = "",
+    val name: String = "",
+    val isGroup: Boolean = false,
+    val imageUrl: String = "",
+    @ServerTimestamp
+    val createdAt: Date? = null,
+    @ServerTimestamp
+    val updatedAt: Date? = null,
+    @ServerTimestamp
+    val deletedAt: Date? = null,
+)
+
+fun ConversationResponse.toConversation(
+    conversationMembers: List<ConversationMember>,
+    messages: List<Message>,
+) = Conversation(
+    id = id,
+    conversationName = name,
+    isGroup = isGroup,
+    imageUrl = imageUrl,
+    conversationMembers = conversationMembers,
+    messages = messages,
+    latestMessage = messages.maxByOrNull { it.createdAt }?.messageBody.orEmpty(),
+    createdAt = createdAt.toString(),
+    deletedAt = createdAt.toString()
 )

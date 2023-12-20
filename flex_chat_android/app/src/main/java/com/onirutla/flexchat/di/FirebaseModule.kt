@@ -27,7 +27,10 @@ package com.onirutla.flexchat.di
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.firestoreSettings
 import com.google.firebase.messaging.FirebaseMessaging
+import com.onirutla.flexchat.BuildConfig
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -45,14 +48,37 @@ object FirebaseModule {
     @Provides
     @Singleton
     fun provideFirebaseAuth(firebaseApp: FirebaseApp): FirebaseAuth =
-        FirebaseAuth.getInstance(firebaseApp)
+        if (BuildConfig.DEBUG) {
+            FirebaseAuth.getInstance(firebaseApp).apply {
+                useEmulator("10.0.2.2", 9099)
+            }
+        } else {
+            FirebaseAuth.getInstance(firebaseApp)
+        }
 
     @Provides
     @Singleton
     fun provideFirebaseDatabase(firebaseApp: FirebaseApp): FirebaseDatabase =
-        FirebaseDatabase.getInstance(firebaseApp)
+        if (BuildConfig.DEBUG) {
+            FirebaseDatabase.getInstance(firebaseApp).apply {
+                useEmulator("10.0.2.2", 9000)
+            }
+        } else {
+            FirebaseDatabase.getInstance(firebaseApp)
+        }
 
     @Provides
     @Singleton
     fun provideFirebaseMessaging(): FirebaseMessaging = FirebaseMessaging.getInstance()
+
+    @Provides
+    @Singleton
+    fun provideFirebaseFirestore(firebaseApp: FirebaseApp): FirebaseFirestore =
+        if (BuildConfig.DEBUG) {
+            FirebaseFirestore.getInstance(firebaseApp).apply {
+                useEmulator("10.0.2.2", 8080)
+            }
+        } else {
+            FirebaseFirestore.getInstance(firebaseApp)
+        }
 }

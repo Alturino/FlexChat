@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2023 - 2023 Ricky Alturino
+ * Copyright (c) 2023 Ricky Alturino
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,17 +22,8 @@
  * SOFTWARE.
  */
 
-package com.onirutla.flexchat.core.data.models
+package com.onirutla.flexchat.ui.screens.profile_screen
 
-data class Conversation(
-    val id: String = "",
-    val name: String = "",
-    val imageUrl: String = "",
-    val isGroup: Boolean = false,
-    val conversationMembers: List<ConversationMember> = listOf(),
-    val latestMessage: String = conversationMembers.flatMap { it.messages }
-        .maxByOrNull { it.createdAt }?.messageBody.orEmpty(),
-    val createdAt: String = "",
-    val deletedAt: String = "",
-)
-
+sealed interface ProfileScreenEvent {
+    data object OnLogOutClick : ProfileScreenEvent
+}

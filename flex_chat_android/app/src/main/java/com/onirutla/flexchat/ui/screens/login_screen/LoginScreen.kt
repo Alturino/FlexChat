@@ -161,7 +161,11 @@ fun LoginScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center
                 ) {
-                    GoogleIconButton(modifier = Modifier, iconSize = 35.dp, onClick = {})
+                    GoogleIconButton(
+                        modifier = Modifier,
+                        iconSize = 35.dp,
+                        onClick = { onEvent(LoginScreenEvent.OnLoginWithGoogleClicked) }
+                    )
                 }
             }
             Column(
@@ -171,7 +175,7 @@ fun LoginScreen(
                 verticalArrangement = Arrangement.SpaceBetween,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                TextButton(onClick = {}) {
+                TextButton(onClick = { onUiEvent(LoginScreenUiEvent.OnDontHaveAccountClick) }) {
                     Text(text = stringResource(R.string.don_t_have_account_register))
                 }
             }
@@ -179,8 +183,16 @@ fun LoginScreen(
     }
 }
 
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL)
+@Preview(
+    uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL,
+    showSystemUi = true,
+    showBackground = true
+)
+@Preview(
+    uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL,
+    showSystemUi = true,
+    showBackground = true
+)
 @Composable
 private fun LoginScreenPreview() {
     FlexChatTheme {

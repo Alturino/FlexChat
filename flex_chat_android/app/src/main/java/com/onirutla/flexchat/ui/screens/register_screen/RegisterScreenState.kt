@@ -25,6 +25,7 @@
 package com.onirutla.flexchat.ui.screens.register_screen
 
 data class RegisterScreenState(
+    val username: String = "",
     val email: String = "",
     val isEmailError: Boolean? = null,
     val password: String = "",
@@ -33,6 +34,7 @@ data class RegisterScreenState(
     val confirmPassword: String = "",
     val isConfirmPasswordError: Boolean? = null,
     val isConfirmPasswordVisible: Boolean = false,
+    val isRegisterButtonEnabled: Boolean? = null,
     val isRegisterSuccessful: Boolean? = null,
     val registerErrorMessage: String = "",
     val isRegisterWithGoogleSuccessful: Boolean? = null,

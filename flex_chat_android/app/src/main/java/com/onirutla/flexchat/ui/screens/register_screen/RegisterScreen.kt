@@ -43,6 +43,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -55,6 +56,7 @@ import com.onirutla.flexchat.R
 import com.onirutla.flexchat.ui.components.EmailField
 import com.onirutla.flexchat.ui.components.GoogleIconButton
 import com.onirutla.flexchat.ui.components.PasswordField
+import com.onirutla.flexchat.ui.components.UsernameField
 import com.onirutla.flexchat.ui.theme.FlexChatTheme
 
 @Composable
@@ -64,6 +66,11 @@ fun RegisterScreen(
     onEvent: (RegisterScreenEvent) -> Unit,
     onUiEvent: (RegisterScreenUiEvent) -> Unit,
 ) {
+    LaunchedEffect(key1 = state.isRegisterSuccessful, block = {
+        if (state.isRegisterSuccessful == true) {
+            onUiEvent(RegisterScreenUiEvent.NavigateToMainScreen)
+        }
+    })
     Scaffold(
         modifier = modifier
             .fillMaxSize()
@@ -84,9 +91,7 @@ fun RegisterScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(weight = 1f),
+                modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.SpaceBetween,
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
@@ -115,22 +120,27 @@ fun RegisterScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .wrapContentHeight(unbounded = true)
-                    .weight(1f),
+                    .wrapContentHeight(),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 horizontalAlignment = Alignment.Start,
             ) {
+                UsernameField(
+                    modifier = Modifier.fillMaxWidth(),
+                    username = state.username,
+                    onUsernameChange = { onEvent(RegisterScreenEvent.OnUsernameChange(it)) },
+                    onNext = { defaultKeyboardAction(imeAction = ImeAction.Next) }
+                )
                 EmailField(
                     modifier = Modifier.fillMaxWidth(),
                     email = state.email,
-                    isError = state.isEmailError ?: false,
+                    isError = state.isEmailError == true,
                     onEmailChange = { onEvent(RegisterScreenEvent.OnEmailChange(it)) },
                     onNext = { defaultKeyboardAction(imeAction = ImeAction.Next) }
                 )
                 PasswordField(
                     modifier = Modifier.fillMaxWidth(),
                     password = state.password,
-                    isError = state.isPasswordError ?: false,
+                    isError = state.isPasswordError == true,
                     onPasswordChange = { onEvent(RegisterScreenEvent.OnPasswordChange(it)) },
                     isPasswordVisible = state.isPasswordVisible,
                     keyboardOptions = KeyboardOptions(
@@ -146,8 +156,8 @@ fun RegisterScreen(
                     modifier = Modifier.fillMaxWidth(),
                     label = stringResource(R.string.confirm_password),
                     password = state.confirmPassword,
-                    isError = state.isConfirmPasswordError ?: false,
-                    onPasswordChange = { onEvent(RegisterScreenEvent.OnPasswordChange(it)) },
+                    isError = state.isConfirmPasswordError == true,
+                    onPasswordChange = { onEvent(RegisterScreenEvent.OnConfirmPasswordChange(it)) },
                     isPasswordVisible = state.isConfirmPasswordVisible,
                     onPasswordVisibleChange = {
                         onEvent(RegisterScreenEvent.OnIsConfirmPasswordVisibleChange(it))
@@ -165,6 +175,7 @@ fun RegisterScreen(
                 )
                 Button(
                     modifier = Modifier.fillMaxWidth(),
+                    enabled = state.isRegisterButtonEnabled == true,
                     onClick = { onEvent(RegisterScreenEvent.OnRegisterClick) }
                 ) {
                     Text(text = stringResource(R.string.register))
@@ -199,17 +210,24 @@ fun RegisterScreen(
 @Composable
 private fun RegisterScreenPreview() {
     FlexChatTheme {
+        val isEmailError = false
+        val password = "graece"
+        val confirmPassword = "graece"
+        val isPasswordError = false
+        val isConfirmPasswordError = false
+        val isPasswordSameAsConfirmPassword = password == confirmPassword
         RegisterScreen(
             state = RegisterScreenState(
                 email = "frances.randall@example.com",
-                isEmailError = null,
-                password = "graece",
-                isPasswordError = null,
+                isEmailError = isEmailError,
+                password = password,
+                isPasswordError = isPasswordError,
                 isPasswordVisible = false,
-                confirmPassword = "eu",
-                isConfirmPasswordError = null,
+                confirmPassword = confirmPassword,
+                isRegisterButtonEnabled = !isEmailError and !isPasswordError and !isConfirmPasswordError and isPasswordSameAsConfirmPassword,
+                isConfirmPasswordError = isConfirmPasswordError,
                 isConfirmPasswordVisible = false,
-                isRegisterSuccessful = null,
+                isRegisterSuccessful = false,
                 registerErrorMessage = "epicuri",
                 isRegisterWithGoogleSuccessful = null,
                 registerWithGoogleErrorMessage = "mollis"

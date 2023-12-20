@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2023 - 2023 Ricky Alturino
+ * Copyright (c) 2023 Ricky Alturino
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,14 +24,37 @@
 
 package com.onirutla.flexchat.core.data.models
 
-data class ConversationMember(
+import com.google.firebase.firestore.IgnoreExtraProperties
+import com.google.firebase.firestore.ServerTimestamp
+import com.onirutla.flexchat.domain.models.Message
+import java.util.Date
+
+@IgnoreExtraProperties
+data class MessageResponse(
     val id: String = "",
     val userId: String = "",
     val conversationId: String = "",
-    val username: String = "",
-    val photoProfileUrl: String = "",
-    val email: String = "",
-    val messages: List<Message> = listOf(),
-    val joinedAt: String = "",
-    val leftAt: String = "",
+    val conversationMemberId: String = "",
+    val senderName: String = "",
+    val senderPhotoUrl: String = "",
+    val messageBody: String = "",
+    @ServerTimestamp
+    val createdAt: Date? = null,
+    @ServerTimestamp
+    val updatedAt: Date? = null,
+    @ServerTimestamp
+    val deletedAt: Date? = null,
+)
+
+fun MessageResponse.toMessage() = Message(
+    id = id,
+    conversationId = conversationId,
+    conversationMemberId = conversationMemberId,
+    userId = userId,
+    senderName = senderName,
+    senderPhotoUrl = senderPhotoUrl,
+    messageBody = messageBody,
+    createdAt = createdAt.toString(),
+    updatedAt = updatedAt.toString(),
+    deletedAt = deletedAt.toString(),
 )

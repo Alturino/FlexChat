@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2023 - 2023 Ricky Alturino
+ * Copyright (c) 2023 Ricky Alturino
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,10 +22,40 @@
  * SOFTWARE.
  */
 
-package com.onirutla.flexchat.core.data.repository
+package com.onirutla.flexchat.core.data.models
 
-import javax.inject.Inject
+import com.google.firebase.firestore.IgnoreExtraProperties
+import com.google.firebase.firestore.ServerTimestamp
+import com.onirutla.flexchat.domain.models.User
+import java.util.Date
 
-class UserRepository @Inject constructor(
+@IgnoreExtraProperties
+data class UserResponse(
+    val id: String = "",
+    val username: String = "",
+    val email: String = "",
+    val password: String = "",
+    val phoneNumber: String = "",
+    val photoProfileUrl: String = "",
+    val status: String = "",
+    val isOnline: Boolean = false,
+    @ServerTimestamp
+    val createdAt: Date? = null,
+    @ServerTimestamp
+    val updatedAt: Date? = null,
+    @ServerTimestamp
+    val deletedAt: Date? = null,
+)
 
+fun UserResponse.toUser() = User(
+    id = id,
+    username = username,
+    email = email,
+    photoProfileUrl = photoProfileUrl,
+    phoneNumber = phoneNumber,
+    status = status,
+    conversation = listOf(),
+    createdAt = createdAt.toString(),
+    deletedAt = deletedAt.toString(),
+    isOnline = isOnline
 )

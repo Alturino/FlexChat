@@ -25,11 +25,62 @@
 package com.onirutla.flexchat.ui.screens.login_screen
 
 import androidx.lifecycle.ViewModel
-import com.onirutla.flexchat.core.data.repository.UserRepository
+import androidx.lifecycle.viewModelScope
+import com.onirutla.flexchat.core.data.repository.FirebaseUserRepository
+import com.onirutla.flexchat.core.util.isValidEmail
+import com.onirutla.flexchat.domain.util.isValidPassword
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class LoginScreenViewModel @Inject constructor(
-    private val userRepository: UserRepository,
-) : ViewModel()
+    private val firebaseUserRepository: FirebaseUserRepository,
+) : ViewModel() {
+
+    private val _state = MutableStateFlow(LoginScreenState())
+    val state = _state.asStateFlow()
+
+    fun onEvent(event: LoginScreenEvent) {
+        when (event) {
+            is LoginScreenEvent.OnEmailChange -> {
+                _state.update {
+                    it.copy(
+                        email = event.email,
+                        isEmailError = event.email.isValidEmail()
+                    )
+                }
+            }
+
+            is LoginScreenEvent.OnIsPasswordVisibleChange -> {
+                _state.update { it.copy(isPasswordVisible = event.isPasswordVisible) }
+            }
+
+            LoginScreenEvent.OnLoginClicked -> {
+                viewModelScope.launch {
+                    firebaseUserRepository.login(
+                        email = _state.value.email,
+                        password = _state.value.password
+                    )
+                }
+            }
+
+            is LoginScreenEvent.OnPasswordChange -> {
+                _state.update {
+                    it.copy(
+                        password = event.password,
+                        isEmailError = event.password.isValidPassword()
+                    )
+                }
+            }
+
+            LoginScreenEvent.OnLoginWithGoogleClicked -> {
+
+            }
+        }
+    }
+
+}

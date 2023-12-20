@@ -12,4 +12,8 @@
     <string name="register_to_start_chatting">Register to start chatting</string>
     <string name="confirm_password">Confirm Password</string>
     <string name="have_an_account_login">Have an account? Login</string>
+    <string name="profile">Profile</string>
+    <string name="name">Name</string>
+    <string name="about">About</string>
+    <string name="select_available_users">Select available users</string>
 </resources>

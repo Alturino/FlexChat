@@ -52,7 +52,7 @@ fun PasswordField(
     onPasswordVisibleChange: (Boolean) -> Unit,
     label: String = stringResource(id = R.string.password),
     password: String,
-    isError: Boolean = false,
+    isError: Boolean,
     isPasswordVisible: Boolean,
     errorMessage: String = "",
     keyboardActions: KeyboardActions,
@@ -94,8 +94,12 @@ fun PasswordField(
     )
 }
 
-@Preview(showBackground = true)
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL,
+@Preview(
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL
+)
+@Preview(
+    uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL,
     showBackground = true
 )
 @Composable

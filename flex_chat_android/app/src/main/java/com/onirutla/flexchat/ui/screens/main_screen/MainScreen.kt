@@ -51,7 +51,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.onirutla.flexchat.R
-import com.onirutla.flexchat.core.data.models.Conversation
+import com.onirutla.flexchat.domain.models.Conversation
 import com.onirutla.flexchat.ui.components.ConversationItem
 import com.onirutla.flexchat.ui.theme.FlexChatTheme
 
@@ -132,7 +132,7 @@ fun MainScreenPreview() {
                 conversations = listOf(
                     Conversation(
                         id = "dictumst",
-                        name = "Cornell Glover",
+                        conversationName = "Cornell Glover",
                         imageUrl = "https://duckduckgo.com/?q=dico",
                         isGroup = false,
                         conversationMembers = listOf(),

@@ -51,8 +51,14 @@ fun SignUpWithGoogle(modifier: Modifier = Modifier, onClick: () -> Unit) {
     )
 }
 
-@Preview
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
+@Preview(
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL
+)
+@Preview(
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL,
+)
 @Composable
 private fun SignUpWithGooglePreview() {
     FlexChatTheme {

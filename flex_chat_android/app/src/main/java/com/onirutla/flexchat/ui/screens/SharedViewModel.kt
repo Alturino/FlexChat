@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2023 - 2023 Ricky Alturino
+ * Copyright (c) 2023 Ricky Alturino
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,12 +22,29 @@
  * SOFTWARE.
  */
 
-package com.onirutla.flexchat.core.data.repository
+package com.onirutla.flexchat.ui.screens
 
-import com.onirutla.flexchat.core.data.models.Message
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.onirutla.flexchat.domain.repository.UserRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
+import timber.log.Timber
+import javax.inject.Inject
 
-class MessageRepository {
-    fun getMessageByUserId(userId: String): List<Message> = listOf()
-    fun getMessageByConversationId(conversationId: String): List<Message> = listOf()
-    fun getMessageByConversationMemberId(conversationMemberId: String): List<Message> = listOf()
+@HiltViewModel
+class SharedViewModel @Inject constructor(
+    private val userRepository: UserRepository,
+) : ViewModel() {
+
+    val isLoggedIn = userRepository.isLoggedIn
+        .onEach { Timber.d("isLoggedIn: $it") }
+        .stateIn(
+            scope = viewModelScope,
+            SharingStarted.Eagerly,
+            initialValue = null
+        )
+
 }

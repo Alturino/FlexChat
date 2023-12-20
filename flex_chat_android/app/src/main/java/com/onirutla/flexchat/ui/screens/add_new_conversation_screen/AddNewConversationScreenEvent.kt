@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2023 - 2023 Ricky Alturino
+ * Copyright (c) 2023 Ricky Alturino
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,17 +22,13 @@
  * SOFTWARE.
  */
 
-package com.onirutla.flexchat.core.data.models
+package com.onirutla.flexchat.ui.screens.add_new_conversation_screen
 
-data class User(
-    val id: String = "",
-    val username: String = "",
-    val photoProfileUrl: String = "",
-    val phoneNumber: String = "",
-    val email: String = "",
-    val isOnline: Boolean = false,
-    val conversationMembers: List<ConversationMember> = listOf(),
-    val conversation: List<Conversation> = listOf(),
-    val createdAt: String = "",
-    val deletedAt: String = "",
-)
+import com.onirutla.flexchat.domain.models.User
+
+sealed interface AddNewConversationScreenEvent {
+    data class OnQueryChange(val query: String) : AddNewConversationScreenEvent
+    data object OnQueryClear : AddNewConversationScreenEvent
+    data object OnSearchClick : AddNewConversationScreenEvent
+    data class OnUserItemClick(val user: User) : AddNewConversationScreenEvent
+}

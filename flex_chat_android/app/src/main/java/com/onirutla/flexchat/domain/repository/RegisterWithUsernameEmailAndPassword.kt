@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2023 - 2023 Ricky Alturino
+ * Copyright (c) 2023 Ricky Alturino
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,10 +22,10 @@
  * SOFTWARE.
  */
 
-package com.onirutla.flexchat.core.data.repository
+package com.onirutla.flexchat.domain.repository
 
-import com.onirutla.flexchat.core.data.models.Conversation
-
-class ConversationRepository {
-    fun getConversationByUserId(userId: String): List<Conversation> = listOf()
-}
+data class RegisterWithUsernameEmailAndPassword(
+    val username: String,
+    val email: String,
+    val password: String,
+)

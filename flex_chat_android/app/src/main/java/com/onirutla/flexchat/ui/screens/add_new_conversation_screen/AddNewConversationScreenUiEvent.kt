@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2023 - 2023 Ricky Alturino
+ * Copyright (c) 2023 Ricky Alturino
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,12 +22,11 @@
  * SOFTWARE.
  */
 
-package com.onirutla.flexchat.core.data.repository
+package com.onirutla.flexchat.ui.screens.add_new_conversation_screen
 
-import com.onirutla.flexchat.core.data.models.ConversationMember
+import com.onirutla.flexchat.domain.models.User
 
-class ConversationMemberRepository {
-    fun getConversationMemberByUserId(userId: String): List<ConversationMember> = listOf()
-    fun getConversationMemberByConversationId(conversationId: String): List<ConversationMember> =
-        listOf()
+sealed interface AddNewConversationScreenUiEvent {
+    data object OnNavigateUpClick : AddNewConversationScreenUiEvent
+    data class OnUserItemClick(val user: User) : AddNewConversationScreenUiEvent
 }

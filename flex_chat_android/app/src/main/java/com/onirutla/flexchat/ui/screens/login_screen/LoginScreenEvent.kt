@@ -29,4 +29,5 @@ sealed interface LoginScreenEvent {
     data class OnPasswordChange(val password: String) : LoginScreenEvent
     data class OnIsPasswordVisibleChange(val isPasswordVisible: Boolean) : LoginScreenEvent
     data object OnLoginClicked : LoginScreenEvent
+    data object OnLoginWithGoogleClicked : LoginScreenEvent
 }

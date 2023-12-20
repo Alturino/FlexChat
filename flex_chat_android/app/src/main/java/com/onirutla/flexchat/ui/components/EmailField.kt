@@ -24,6 +24,7 @@
 
 package com.onirutla.flexchat.ui.components
 
+import android.content.res.Configuration
 import androidx.compose.foundation.text.KeyboardActionScope
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -40,6 +41,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import com.onirutla.flexchat.R
+import com.onirutla.flexchat.ui.theme.FlexChatTheme
 
 @Composable
 fun EmailField(
@@ -77,8 +79,17 @@ fun EmailField(
     )
 }
 
-@Preview
+@Preview(
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL
+)
+@Preview(
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL
+)
 @Composable
 private fun EmailFieldPreview() {
-
+    FlexChatTheme {
+        EmailField(email = "asdfasdf", onEmailChange = {}, onNext = {})
+    }
 }
