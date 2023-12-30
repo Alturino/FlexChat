@@ -24,9 +24,14 @@
 
 package com.onirutla.flexchat.core.data.repository
 
+import android.content.Intent
+import android.content.IntentSender
 import arrow.core.Either
+import com.google.android.gms.auth.api.identity.BeginSignInRequest
+import com.google.android.gms.auth.api.identity.SignInClient
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuth.AuthStateListener
+import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.snapshots
 import com.google.firebase.firestore.toObject
@@ -42,8 +47,10 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.tasks.await
 import timber.log.Timber
@@ -55,11 +62,14 @@ import javax.inject.Singleton
 class FirebaseUserRepository @Inject constructor(
     private val firebaseFirestore: FirebaseFirestore,
     private val firebaseAuth: FirebaseAuth,
+    private val signInClient: SignInClient,
 ) : UserRepository {
 
     override fun signOut() {
         firebaseAuth.signOut()
     }
+
+    private val userRef = firebaseFirestore.collection(FirebaseCollections.USERS)
 
     private val _currentUser: Flow<User?> = callbackFlow {
         val listener = AuthStateListener {
@@ -73,8 +83,6 @@ class FirebaseUserRepository @Inject constructor(
                         phoneNumber = this?.phoneNumber.orEmpty(),
                         status = "",
                         conversation = listOf(),
-                        createdAt = "",
-                        deletedAt = "",
                     )
                 }
             } else {
@@ -84,30 +92,16 @@ class FirebaseUserRepository @Inject constructor(
         }
         firebaseAuth.addAuthStateListener(listener)
         awaitClose {
-            Timber.d("removing auth state listener: $listener")
             firebaseAuth.removeAuthStateListener(listener)
-            Timber.d("removing auth state listener: $listener")
         }
     }
 
     override val currentUser: Flow<User> = _currentUser.filterNotNull()
-        .onEach { Timber.d("currentUser: $it") }
-        .mapLatest {
-            val userFromFirestore = firebaseFirestore.collection(FirebaseCollections.USERS)
-                .document(it.id)
-                .get()
-                .await()
-                .toObject<UserResponse>()
-                ?.toUser()
-
-            Timber.d("userFromFirestore: $userFromFirestore")
-
-            it.copy(
-                username = userFromFirestore?.username.orEmpty(),
-                status = userFromFirestore?.status.orEmpty(),
-                createdAt = userFromFirestore?.createdAt.orEmpty(),
-                deletedAt = userFromFirestore?.deletedAt.orEmpty()
-            )
+        .flatMapLatest { user ->
+            userRef.document(user.id)
+                .snapshots()
+                .map { it.toObject<UserResponse>() }
+                .mapNotNull { it?.toUser() }
         }.onEach { Timber.d("mappedCurrentUser: $it") }
 
     override val isLoggedIn: Flow<Boolean> = _currentUser.mapLatest { it != null }
@@ -116,34 +110,70 @@ class FirebaseUserRepository @Inject constructor(
         val result = firebaseAuth.signInWithEmailAndPassword(email, password).await()
         if (result.user == null) {
             Either.Left(NullPointerException("User cannot be null"))
+        } else {
+            Either.Right(Unit)
         }
-        firebaseFirestore.collection(FirebaseCollections.USERS)
-            .add(
-                with(result.user!!) {
-                    UserResponse(
-                        id = uid,
-                        username = displayName.orEmpty(),
-                        email = email,
-                        password = password,
-                        phoneNumber = phoneNumber.orEmpty(),
-                        photoProfileUrl = photoUrl.toString(),
-                        status = "",
-                        isOnline = false,
-                    )
-                }
-            ).await()
-        Either.Right(Unit)
     } catch (e: Exception) {
         Timber.e(e)
         if (e is CancellationException) {
-            Either.Left(e)
             throw e
         }
         Either.Left(e)
     }
 
-    override suspend fun loginWithGoogle() {
+    override suspend fun getSignInIntentSender(): Either<Exception, IntentSender> {
+        val googleIdRequestOptions = BeginSignInRequest.GoogleIdTokenRequestOptions.builder()
+            .setSupported(true)
+            .setFilterByAuthorizedAccounts(false)
+            .setServerClientId("543116269827-mlp3gfm76q1gjvqrj3k6dg808cb5r221.apps.googleusercontent.com")
+            .build()
 
+        val signInRequest = BeginSignInRequest.builder()
+            .setGoogleIdTokenRequestOptions(googleIdRequestOptions)
+            .build()
+
+        val signInResult = try {
+            val signInResult = signInClient.beginSignIn(signInRequest).await()
+            Either.Right(signInResult.pendingIntent.intentSender)
+        } catch (e: Exception) {
+            Timber.e(e)
+            if (e is CancellationException)
+                throw e
+            Either.Left(e)
+        }
+
+        return signInResult
+    }
+
+    override suspend fun loginWithGoogle(intent: Intent): Either<Exception, User> = try {
+        val signInCredential = signInClient.getSignInCredentialFromIntent(intent)
+        val googleIdToken = signInCredential.googleIdToken
+        val googleCredential = GoogleAuthProvider.getCredential(googleIdToken, null)
+
+        val firebaseUser = firebaseAuth.signInWithCredential(googleCredential).await().user
+        if (firebaseUser != null) {
+            val userResponse = with(firebaseUser) {
+                UserResponse(
+                    id = uid,
+                    username = displayName.orEmpty(),
+                    email = email.orEmpty(),
+                    password = "",
+                    phoneNumber = phoneNumber.orEmpty(),
+                    photoProfileUrl = photoUrl.toString(),
+                    status = "",
+                    isOnline = false,
+                )
+            }
+            saveUserToFireStore(userResponse)
+            Either.Right(userResponse.toUser())
+        } else {
+            Either.Left(NullPointerException("Sign in user is null"))
+        }
+    } catch (e: Exception) {
+        Timber.e(e)
+        if (e is CancellationException)
+            throw e
+        Either.Left(e)
     }
 
     override suspend fun registerWithEmailAndPassword(
@@ -154,10 +184,8 @@ class FirebaseUserRepository @Inject constructor(
         }
         if (result.user == null) {
             Either.Left(NullPointerException("User cannot be null"))
-        }
-        firebaseFirestore.collection(FirebaseCollections.USERS)
-            .document("${result.user?.uid}")
-            .set(
+        } else {
+            saveUserToFireStore(
                 with(result.user!!) {
                     with(registerArg) {
                         UserResponse(
@@ -172,22 +200,33 @@ class FirebaseUserRepository @Inject constructor(
                         )
                     }
                 }
-            ).await()
-        Either.Right(Unit)
+            )
+            Either.Right(Unit)
+        }
     } catch (e: Exception) {
         Timber.e(e)
+        firebaseAuth.currentUser?.delete()?.await()
         if (e is CancellationException) {
-            Either.Left(e)
             throw e
         }
         Either.Left(e)
     }
 
-    override fun getUserByUsername(username: String): Flow<List<User>> = firebaseFirestore
-        .collection(FirebaseCollections.USERS)
+    override fun getUserByUsername(username: String): Flow<List<User>> = userRef
         .whereEqualTo("username", username)
         .snapshots()
+        .onEach { Timber.d("$it") }
         .map { snapshot -> snapshot.map { it.toObject<UserResponse>().toUser() } }
         .onEach { Timber.d("users: $it") }
 
+    private suspend fun saveUserToFireStore(
+        userResponse: UserResponse,
+    ): Either<Exception, Unit> = try {
+        userRef.document(userResponse.id)
+            .set(userResponse)
+            .await()
+        Either.Right(Unit)
+    } catch (e: Exception) {
+        Either.Left(e)
+    }
 }

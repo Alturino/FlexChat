@@ -18,6 +18,7 @@ kotlinx-datetime = "0.5.0"
 lifecycle-runtime-ktx = "2.6.2"
 material = "1.5.4"
 nav_version = "2.7.6"
+play-services-auth = "20.7.0"
 timber = "5.0.1"
 
 [libraries]
@@ -48,15 +49,15 @@ core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "core-ktx
 dagger-compiler = { module = "com.google.dagger:dagger-compiler", version.ref = "hilt" }
 desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugar-jdk-libs" }
 espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso-core" }
-firebase-analytics-ktx = { module = "com.google.firebase:firebase-analytics-ktx" }
-firebase-auth-ktx = { module = "com.google.firebase:firebase-auth-ktx" }
+firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
+firebase-auth = { module = "com.google.firebase:firebase-auth" }
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebase-bom" }
-firebase-crashlytics-ktx = { module = "com.google.firebase:firebase-crashlytics-ktx" }
-firebase-database-ktx = { module = "com.google.firebase:firebase-database-ktx" }
-firebase-firestore-ktx = { module = "com.google.firebase:firebase-firestore-ktx" }
-firebase-messaging-ktx = { module = "com.google.firebase:firebase-messaging-ktx" }
-firebase-storage-ktx = { module = "com.google.firebase:firebase-storage-ktx" }
-firebase-perf-ktx = { group = "com.google.firebase", name = "firebase-perf-ktx" }
+firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics" }
+firebase-database = { module = "com.google.firebase:firebase-database" }
+firebase-firestore = { module = "com.google.firebase:firebase-firestore" }
+firebase-messaging = { module = "com.google.firebase:firebase-messaging" }
+firebase-perf = { group = "com.google.firebase", name = "firebase-perf" }
+firebase-storage = { module = "com.google.firebase:firebase-storage" }
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
 hilt-android-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hilt" }
 hilt-android-testing = { module = "com.google.dagger:hilt-android-testing", version.ref = "hilt" }
@@ -65,6 +66,7 @@ junit = { group = "junit", name = "junit", version.ref = "junit" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
 lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle-runtime-ktx" }
 material3 = { group = "androidx.compose.material3", name = "material3" }
+play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "play-services-auth" }
 timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
 ui = { group = "androidx.compose.ui", name = "ui" }
 ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }

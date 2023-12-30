@@ -48,6 +48,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -67,6 +68,11 @@ fun AddNewConversationScreen(
     onEvent: (AddNewConversationScreenEvent) -> Unit,
     onUiEvent: (AddNewConversationScreenUiEvent) -> Unit,
 ) {
+    LaunchedEffect(key1 = state.conversationId, block = {
+        if (state.conversationId.isNotBlank() or state.conversationId.isNotEmpty()) {
+            onUiEvent(AddNewConversationScreenUiEvent.OnNavigateToConversationScreen(state.conversationId))
+        }
+    })
     Scaffold(
         modifier = modifier
             .fillMaxSize()
@@ -110,7 +116,7 @@ fun AddNewConversationScreen(
             items(items = state.users) {
                 ListItem(
                     modifier = Modifier.clickable {
-                        onUiEvent(AddNewConversationScreenUiEvent.OnUserItemClick(user = it))
+                        onEvent(AddNewConversationScreenEvent.OnUserItemClick(user = it))
                     },
                     headlineContent = { Text(text = it.username) },
                     leadingContent = {

@@ -21,6 +21,7 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        multiDexEnabled = true
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -36,6 +37,7 @@ android {
         }
     }
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
@@ -79,14 +81,14 @@ dependencies {
 
     // Firebase
     implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.auth.ktx)
-    implementation(libs.firebase.database.ktx)
-    implementation(libs.firebase.firestore.ktx)
-    implementation(libs.firebase.crashlytics.ktx)
-    implementation(libs.firebase.analytics.ktx)
-    implementation(libs.firebase.messaging.ktx)
-    implementation(libs.firebase.perf.ktx)
-    implementation(libs.firebase.storage.ktx)
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.database)
+    implementation(libs.firebase.firestore)
+    implementation(libs.firebase.crashlytics)
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.messaging)
+    implementation(libs.firebase.perf)
+    implementation(libs.firebase.storage)
 
     // Lifecycle
     implementation(libs.androidx.lifecycle.common)
@@ -131,6 +133,9 @@ dependencies {
 
     // Kotlinx Datetime
     implementation(libs.kotlinx.datetime)
+
+    // Google Play Service
+    implementation(libs.play.services.auth)
 
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 }

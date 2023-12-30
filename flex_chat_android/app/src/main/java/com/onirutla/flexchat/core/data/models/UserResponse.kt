@@ -27,6 +27,8 @@ package com.onirutla.flexchat.core.data.models
 import com.google.firebase.firestore.IgnoreExtraProperties
 import com.google.firebase.firestore.ServerTimestamp
 import com.onirutla.flexchat.domain.models.User
+import java.time.LocalDateTime
+import java.time.ZoneId
 import java.util.Date
 
 @IgnoreExtraProperties
@@ -54,8 +56,14 @@ fun UserResponse.toUser() = User(
     photoProfileUrl = photoProfileUrl,
     phoneNumber = phoneNumber,
     status = status,
+    isOnline = isOnline,
     conversation = listOf(),
-    createdAt = createdAt.toString(),
-    deletedAt = deletedAt.toString(),
-    isOnline = isOnline
+    createdAt = LocalDateTime.ofInstant(
+        createdAt?.toInstant() ?: Date().toInstant(),
+        ZoneId.systemDefault()
+    ),
+    deletedAt = LocalDateTime.ofInstant(
+        createdAt?.toInstant() ?: Date().toInstant(),
+        ZoneId.systemDefault()
+    ),
 )

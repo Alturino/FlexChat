@@ -25,10 +25,16 @@
 package com.onirutla.flexchat.ui.screens.conversation_screen
 
 import com.onirutla.flexchat.domain.models.Conversation
+import com.onirutla.flexchat.domain.models.ConversationMember
 import com.onirutla.flexchat.domain.models.Message
+import com.onirutla.flexchat.domain.models.User
 
 data class ConversationScreenState(
     val conversation: Conversation = Conversation(),
     val messages: List<Message> = listOf(),
+    val currentUser: User = User(),
+    val currentConversationMember: ConversationMember = ConversationMember(),
     val draftMessage: String = "",
+    val isSendMessageError: Boolean = false,
+    val sendErrorMessage: String = "",
 )

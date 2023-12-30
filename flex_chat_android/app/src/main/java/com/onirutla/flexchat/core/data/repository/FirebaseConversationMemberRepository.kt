@@ -24,36 +24,124 @@
 
 package com.onirutla.flexchat.core.data.repository
 
+import arrow.core.Either
+import arrow.fx.coroutines.parMap
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.snapshots
 import com.google.firebase.firestore.toObjects
 import com.onirutla.flexchat.core.data.FirebaseCollections
 import com.onirutla.flexchat.core.data.models.ConversationMemberResponse
+import com.onirutla.flexchat.core.data.models.toConversationMember
 import com.onirutla.flexchat.domain.models.ConversationMember
 import com.onirutla.flexchat.domain.repository.ConversationMemberRepository
+import com.onirutla.flexchat.domain.repository.MessageRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.tasks.await
+import timber.log.Timber
+import java.util.concurrent.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @Singleton
 class FirebaseConversationMemberRepository @Inject constructor(
     private val firebaseFirestore: FirebaseFirestore,
+    private val messageRepository: MessageRepository,
 ) : ConversationMemberRepository {
-    override suspend fun getConversationMemberByUserId(userId: String): List<ConversationMember> {
-        TODO("Not yet implemented")
+
+    private val conversationMemberRef = firebaseFirestore
+        .collection(FirebaseCollections.CONVERSATION_MEMBERS)
+
+    override suspend fun getConversationMemberByUserId(
+        userId: String,
+    ): Either<Exception, List<ConversationMember>> = try {
+        val conversationMembers = conversationMemberRef.whereEqualTo("userId", userId)
+            .get()
+            .await()
+            .toObjects<ConversationMemberResponse>()
+            .parMap { conversationMemberResponse ->
+                val messages = messageRepository
+                    .getMessageByConversationMemberId(conversationMemberId = conversationMemberResponse.id)
+                    .onLeft { Timber.e(it) }
+                    .onRight { Timber.d("$it") }
+                    .fold(ifLeft = { listOf() }, ifRight = { it })
+                conversationMemberResponse.toConversationMember(messages = messages)
+            }
+        Either.Right(conversationMembers)
+    } catch (e: Exception) {
+        Timber.e("on line 74:30 $e")
+        if (e is CancellationException) throw e
+        Either.Left(e)
     }
 
-    override suspend fun getConversationMemberByConversationId(conversationId: String): List<ConversationMember> {
-        val conversationMembers = firebaseFirestore
-            .collection(FirebaseCollections.CONVERSATION_MEMBERS)
+    override fun observeConversationMemberByUserId(
+        userId: String,
+    ): Flow<List<ConversationMember>> = conversationMemberRef.whereEqualTo("userId", userId)
+        .snapshots()
+        .mapLatest { snapshot ->
+            snapshot.toObjects<ConversationMemberResponse>()
+                .parMap { conversationMemberResponse ->
+                    val messages = messageRepository
+                        .getMessageByConversationMemberId(conversationMemberId = conversationMemberResponse.id)
+                        .onLeft { Timber.e(it) }
+                        .onRight { Timber.d("$it") }
+                        .fold(ifLeft = { listOf() }, ifRight = { it })
+                    conversationMemberResponse.toConversationMember(messages = messages)
+                }
+                .sortedByDescending { it.joinedAt }
+        }
+
+    override suspend fun getConversationMemberByConversationId(
+        conversationId: String,
+    ): Either<Exception, List<ConversationMember>> = try {
+        val conversationMembers = conversationMemberRef
             .whereEqualTo("conversationId", conversationId)
             .get()
             .await()
             .toObjects<ConversationMemberResponse>()
-
-
+            .parMap { conversationMemberResponse ->
+                val messages = messageRepository
+                    .getMessageByConversationMemberId(conversationMemberId = conversationMemberResponse.id)
+                    .onLeft { Timber.e("$it") }
+                    .onRight { Timber.d("$it") }
+                    .fold(ifLeft = { listOf() }, ifRight = { it })
+                conversationMemberResponse.toConversationMember(messages = messages)
+            }
+        Either.Right(conversationMembers)
+    } catch (e: Exception) {
+        Timber.e("on line 114:30 $e")
+        if (e is CancellationException) throw e
+        Either.Left(e)
     }
 
-    override suspend fun createConversationMember(conversationMember: ConversationMember) {
-        TODO("Not yet implemented")
+    override suspend fun createConversationMember(
+        conversationMemberResponse: ConversationMemberResponse,
+    ): Either<Exception, String> = try {
+        val conversationMembers = conversationMemberRef
+            .whereEqualTo("userId", conversationMemberResponse.userId)
+            .whereEqualTo("conversationId", conversationMemberResponse.conversationId)
+            .get()
+            .await()
+            .toObjects<ConversationMemberResponse>()
+
+        val isConversationMemberExist = conversationMembers.isNotEmpty()
+        if (isConversationMemberExist) {
+            Either.Right(conversationMembers.first().id)
+        } else {
+            val newConversationMemberId = conversationMemberRef.document().id
+            val newConversationMember = conversationMemberResponse
+                .copy(id = newConversationMemberId)
+            conversationMemberRef.document(newConversationMemberId)
+                .set(newConversationMember)
+                .await()
+            Either.Right(newConversationMemberId)
+        }
+    } catch (e: Exception) {
+        Timber.e("on line 142:30 $e")
+        if (e is CancellationException)
+            throw e
+        Either.Left(e)
     }
 }

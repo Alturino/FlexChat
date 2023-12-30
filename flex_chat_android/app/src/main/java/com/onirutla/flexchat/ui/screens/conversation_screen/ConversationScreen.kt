@@ -64,6 +64,9 @@ import coil.compose.SubcomposeAsyncImage
 import com.onirutla.flexchat.domain.models.Conversation
 import com.onirutla.flexchat.domain.models.Message
 import com.onirutla.flexchat.ui.theme.FlexChatTheme
+import com.onirutla.flexchat.ui.util.toLocalTimeString
+import java.time.LocalDateTime
+import java.time.ZoneId
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -107,7 +110,7 @@ fun ConversationScreen(
                 OutlinedTextField(
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.medium,
-                    value = "adfa",
+                    value = state.draftMessage,
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Text,
                         imeAction = ImeAction.Send
@@ -142,7 +145,7 @@ fun ConversationScreen(
                     },
                     headlineContent = { Text(text = it.senderName) },
                     supportingContent = { Text(text = it.messageBody) },
-                    trailingContent = { Text(text = it.createdAt) }
+                    trailingContent = { Text(text = it.createdAt.toLocalTimeString()) }
                 )
             }
         }
@@ -170,9 +173,9 @@ private fun ConversationScreenPreview() {
                     imageUrl = "https://duckduckgo.com/?q=persius",
                     isGroup = false,
                     conversationMembers = listOf(),
-                    latestMessage = "lectus",
-                    createdAt = "10:54",
-                    deletedAt = "liber"
+                    latestMessage = Message(),
+                    createdAt = LocalDateTime.now(ZoneId.systemDefault()),
+                    deletedAt = LocalDateTime.now(ZoneId.systemDefault()),
                 ),
                 messages = listOf(
                     Message(
@@ -183,8 +186,8 @@ private fun ConversationScreenPreview() {
                         senderName = "Robbie Combs",
                         senderPhotoUrl = "https://www.google.com/#q=solet",
                         messageBody = "ius",
-                        createdAt = "lobortis",
-                        deletedAt = "curabitur"
+                        createdAt = LocalDateTime.now(ZoneId.systemDefault()),
+                        deletedAt = LocalDateTime.now(ZoneId.systemDefault())
                     )
                 )
             ),

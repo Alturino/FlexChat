@@ -26,4 +26,7 @@ package com.onirutla.flexchat.ui.screens.main_screen
 
 import com.onirutla.flexchat.domain.models.Conversation
 
-data class MainScreenState(val conversations: List<Conversation> = listOf())
+data class MainScreenState(
+    val userId: String = "",
+    val conversations: List<Conversation> = listOf(),
+)

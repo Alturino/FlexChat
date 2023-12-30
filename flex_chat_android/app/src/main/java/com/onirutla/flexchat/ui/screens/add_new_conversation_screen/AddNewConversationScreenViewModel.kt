@@ -26,23 +26,34 @@ package com.onirutla.flexchat.ui.screens.add_new_conversation_screen
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import arrow.fx.coroutines.parMap
+import com.onirutla.flexchat.core.data.models.ConversationMemberResponse
+import com.onirutla.flexchat.core.data.models.ConversationResponse
+import com.onirutla.flexchat.domain.repository.ConversationMemberRepository
 import com.onirutla.flexchat.domain.repository.ConversationRepository
 import com.onirutla.flexchat.domain.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filterNot
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import javax.inject.Inject
 
+@OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
 @HiltViewModel
 class AddNewConversationScreenViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val conversationRepository: ConversationRepository,
+    private val conversationMemberRepository: ConversationMemberRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AddNewConversationScreenState())
@@ -50,13 +61,26 @@ class AddNewConversationScreenViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            _state.map { it.query }
-                .filterNot { it.isEmpty() or it.isBlank() }
-                .debounce(500)
-                .flatMapLatest { userRepository.getUserByUsername(it) }
-                .collect { users ->
-                    _state.update { it.copy(users = users) }
+            launch {
+                userRepository.currentUser.collectLatest { user ->
+                    _state.update { it.copy(currentUser = user) }
                 }
+            }
+            launch {
+                _state.mapLatest { it.query }
+                    .filterNot { it.isEmpty() or it.isBlank() }
+                    .debounce(500)
+                    .onEach { Timber.d("query afterDebounce: $it") }
+                    .flatMapLatest { userRepository.getUserByUsername(it) }
+                    .mapLatest { users ->
+                        users.onEach { Timber.d("before filtered: $it") }
+                            .filter { user -> user.id != _state.value.currentUser.id }
+                            .onEach { Timber.d("after filtered: $it") }
+                    }
+                    .collect { users ->
+                        _state.update { it.copy(users = users) }
+                    }
+            }
         }
     }
 
@@ -75,7 +99,37 @@ class AddNewConversationScreenViewModel @Inject constructor(
             }
 
             is AddNewConversationScreenEvent.OnUserItemClick -> {
+                viewModelScope.launch {
+                    val conversationMemberNames = listOf(
+                        event.user.username,
+                        _state.value.currentUser.username,
+                    )
+                    val conversationId = conversationRepository.createConversation(
+                        ConversationResponse(
+                            conversationName = conversationMemberNames.joinToString(separator = " "),
+                            slug = conversationMemberNames.sorted()
+                                .joinToString(separator = ",") { it.lowercase() },
+                        )
+                    ).onLeft { Timber.e(it) }
+                        .fold(ifLeft = { "" }, ifRight = { it })
 
+                    if (conversationId.isNotBlank() or conversationId.isNotEmpty()) {
+                        listOf(event.user, _state.value.currentUser).parMap {
+                            ConversationMemberResponse(
+                                userId = it.id,
+                                conversationId = conversationId,
+                                username = it.username,
+                                photoProfileUrl = it.photoProfileUrl,
+                            )
+                        }.parMap { conversationMemberResponse ->
+                            conversationMemberRepository.createConversationMember(
+                                conversationMemberResponse = conversationMemberResponse
+                            ).onRight { Timber.d("conversationMemberId $it") }
+                                .onLeft { Timber.e(it) }
+                        }
+                        _state.update { it.copy(conversationId = conversationId) }
+                    }
+                }
             }
         }
     }

@@ -38,7 +38,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.SubcomposeAsyncImage
 import com.onirutla.flexchat.domain.models.Conversation
+import com.onirutla.flexchat.domain.models.Message
 import com.onirutla.flexchat.ui.theme.FlexChatTheme
+import com.onirutla.flexchat.ui.util.toLocalTimeString
+import java.time.LocalDateTime
 
 @Composable
 fun ConversationItem(
@@ -60,7 +63,10 @@ fun ConversationItem(
             )
         },
         supportingContent = {
-            Text(text = conversation.latestMessage)
+            Text(text = conversation.latestMessage.messageBody)
+        },
+        trailingContent = {
+            Text(text = conversation.latestMessage.createdAt.toLocalTimeString())
         }
     )
 }
@@ -83,9 +89,9 @@ private fun ConversationItemPreview() {
                 imageUrl = "https://www.google.com/#q=errem",
                 isGroup = false,
                 conversationMembers = listOf(),
-                latestMessage = "assueverit",
-                createdAt = "semper",
-                deletedAt = "sem"
+                latestMessage = Message(),
+                createdAt = LocalDateTime.now(),
+                deletedAt = LocalDateTime.MAX,
             ),
             onClick = {}
         )

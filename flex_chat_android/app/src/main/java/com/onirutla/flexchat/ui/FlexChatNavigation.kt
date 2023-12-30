@@ -24,9 +24,14 @@
 
 package com.onirutla.flexchat.ui
 
+import android.app.Activity.RESULT_OK
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -48,14 +53,15 @@ import com.onirutla.flexchat.ui.screens.login_screen.LoginScreen
 import com.onirutla.flexchat.ui.screens.login_screen.LoginScreenUiEvent
 import com.onirutla.flexchat.ui.screens.login_screen.LoginScreenViewModel
 import com.onirutla.flexchat.ui.screens.main_screen.MainScreen
-import com.onirutla.flexchat.ui.screens.main_screen.MainScreenState
 import com.onirutla.flexchat.ui.screens.main_screen.MainScreenUiEvent
+import com.onirutla.flexchat.ui.screens.main_screen.MainScreenViewModel
 import com.onirutla.flexchat.ui.screens.profile_screen.ProfileScreen
 import com.onirutla.flexchat.ui.screens.profile_screen.ProfileScreenUiEvent
 import com.onirutla.flexchat.ui.screens.profile_screen.ProfileScreenViewModel
 import com.onirutla.flexchat.ui.screens.register_screen.RegisterScreen
 import com.onirutla.flexchat.ui.screens.register_screen.RegisterScreenUiEvent
 import com.onirutla.flexchat.ui.screens.register_screen.RegisterScreenViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun FlexChatNavigation(
@@ -85,10 +91,12 @@ fun FlexChatNavigation(
             route = Screens.MainScreen.route,
             arguments = listOf(),
             deepLinks = listOf()
-        ) {
+        ) { backStackEntry ->
+            val vm: MainScreenViewModel = hiltViewModel()
+            val state by vm.state.collectAsStateWithLifecycle()
 
             MainScreen(
-                state = MainScreenState(),
+                state = state,
                 onUiEvent = {
                     when (it) {
                         is MainScreenUiEvent.OnConversationClick -> {
@@ -113,6 +121,18 @@ fun FlexChatNavigation(
         ) {
             val vm: LoginScreenViewModel = hiltViewModel()
             val state by vm.state.collectAsStateWithLifecycle()
+
+            val coroutineScope = rememberCoroutineScope()
+
+            val signInLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.StartIntentSenderForResult(),
+                onResult = {
+                    if (it.resultCode == RESULT_OK) {
+                        vm.loginWithGoogle(it.data ?: return@rememberLauncherForActivityResult)
+                    }
+                }
+            )
+
             LoginScreen(
                 state = state,
                 onEvent = vm::onEvent,
@@ -132,7 +152,24 @@ fun FlexChatNavigation(
                         }
 
                         LoginScreenUiEvent.OnLoginWithGoogleClick -> {
+                            coroutineScope.launch {
+                                val intentSender = vm.getSignInIntentSender()
+                                if (intentSender.isRight()) {
+                                    val intentSenderRequest =
+                                        IntentSenderRequest.Builder(intentSender.getOrNull()!!)
+                                            .build()
+                                    signInLauncher.launch(intentSenderRequest)
+                                }
+                            }
+                        }
 
+                        LoginScreenUiEvent.NavigateToMainScreen -> {
+                            navController.navigate(route = Screens.MainScreen.route) {
+                                launchSingleTop = true
+                                popUpTo(route = Screens.LoginScreen.route) {
+                                    inclusive = true
+                                }
+                            }
                         }
                     }
                 }
@@ -192,8 +229,12 @@ fun FlexChatNavigation(
                             navController.navigateUp()
                         }
 
-                        is AddNewConversationScreenUiEvent.OnUserItemClick -> {
-
+                        is AddNewConversationScreenUiEvent.OnNavigateToConversationScreen -> {
+                            navController.navigate(route = "${Screens.ConversationScreen.route}/${it.conversationId}") {
+                                popUpTo(route = Screens.AddNewConversationScreen.route) {
+                                    inclusive = true
+                                }
+                            }
                         }
                     }
                 }
@@ -244,6 +285,7 @@ fun FlexChatNavigation(
         ) { backStackEntry ->
             val vm: ConversationScreenViewModel = hiltViewModel()
             val state by vm.state.collectAsStateWithLifecycle()
+
 
             val conversationId = backStackEntry.arguments?.getString("conversationId", "").orEmpty()
             LaunchedEffect(key1 = conversationId, block = {

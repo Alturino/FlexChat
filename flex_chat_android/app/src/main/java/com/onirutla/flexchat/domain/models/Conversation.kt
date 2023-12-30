@@ -24,16 +24,27 @@
 
 package com.onirutla.flexchat.domain.models
 
+import com.onirutla.flexchat.core.data.models.ConversationResponse
+import java.time.LocalDateTime
+
 data class Conversation(
     val id: String = "",
     val conversationName: String = "",
+    val slug: String = "",
     val isGroup: Boolean = false,
     val imageUrl: String = "",
     val conversationMembers: List<ConversationMember> = listOf(),
-    val messages: List<Message> = conversationMembers.flatMap { it.messages }.sortedByDescending { it.createdAt },
-    val latestMessage: String = messages.maxByOrNull { it.createdAt }?.messageBody.orEmpty(),
-    val createdAt: String = "",
-    val deletedAt: String = "",
+    val messages: List<Message> = conversationMembers.flatMap { it.messages }
+        .sortedByDescending { it.createdAt },
+    val latestMessage: Message = messages.maxByOrNull { it.createdAt } ?: Message(),
+    val createdAt: LocalDateTime = LocalDateTime.now(),
+    val deletedAt: LocalDateTime = LocalDateTime.MAX,
 )
 
-
+fun Conversation.toConversationResponse() = ConversationResponse(
+    id = id,
+    conversationName = conversationName,
+    isGroup = isGroup,
+    imageUrl = imageUrl,
+    slug = slug,
+)

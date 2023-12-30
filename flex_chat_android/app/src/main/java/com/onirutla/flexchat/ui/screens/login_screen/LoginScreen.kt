@@ -41,9 +41,14 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -65,6 +70,24 @@ fun LoginScreen(
     onEvent: (LoginScreenEvent) -> Unit,
     onUiEvent: (LoginScreenUiEvent) -> Unit,
 ) {
+    val snackBarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(
+        key1 = state.isLoginSuccessful,
+        key2 = state.isLoginWithGoogleSuccessful,
+        block = {
+            if (state.isLoginSuccessful == true) {
+                onUiEvent(LoginScreenUiEvent.NavigateToMainScreen)
+            }
+            if (state.isLoginSuccessful == false) {
+                snackBarHostState.showSnackbar(state.loginErrorMessage)
+            }
+            if (state.isLoginWithGoogleSuccessful == true) {
+                onUiEvent(LoginScreenUiEvent.NavigateToMainScreen)
+            }
+            if (state.isLoginWithGoogleSuccessful == false) {
+                snackBarHostState.showSnackbar(state.loginWithGoogleErrorMessage)
+            }
+        })
     Scaffold(
         modifier = modifier
             .fillMaxSize()
@@ -76,6 +99,11 @@ fun LoginScreen(
             right = 16.dp,
             bottom = 16.dp
         ),
+        snackbarHost = {
+            SnackbarHost(hostState = snackBarHostState) {
+                Snackbar(snackbarData = it)
+            }
+        }
     ) { contentPadding ->
         Column(
             modifier = Modifier
@@ -164,7 +192,7 @@ fun LoginScreen(
                     GoogleIconButton(
                         modifier = Modifier,
                         iconSize = 35.dp,
-                        onClick = { onEvent(LoginScreenEvent.OnLoginWithGoogleClicked) }
+                        onClick = { onUiEvent(LoginScreenUiEvent.OnLoginWithGoogleClick) }
                     )
                 }
             }

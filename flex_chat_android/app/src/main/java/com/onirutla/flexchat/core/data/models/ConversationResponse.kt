@@ -29,13 +29,16 @@ import com.google.firebase.firestore.ServerTimestamp
 import com.onirutla.flexchat.domain.models.Conversation
 import com.onirutla.flexchat.domain.models.ConversationMember
 import com.onirutla.flexchat.domain.models.Message
+import java.time.LocalDateTime
+import java.time.ZoneId
 import java.util.Date
 
 @IgnoreExtraProperties
 data class ConversationResponse(
     val id: String = "",
-    val name: String = "",
+    val conversationName: String = "",
     val isGroup: Boolean = false,
+    val slug: String = "",
     val imageUrl: String = "",
     @ServerTimestamp
     val createdAt: Date? = null,
@@ -50,12 +53,19 @@ fun ConversationResponse.toConversation(
     messages: List<Message>,
 ) = Conversation(
     id = id,
-    conversationName = name,
+    conversationName = conversationName,
+    slug = slug,
     isGroup = isGroup,
     imageUrl = imageUrl,
     conversationMembers = conversationMembers,
     messages = messages,
-    latestMessage = messages.maxByOrNull { it.createdAt }?.messageBody.orEmpty(),
-    createdAt = createdAt.toString(),
-    deletedAt = createdAt.toString()
+    latestMessage = messages.maxByOrNull { it.createdAt } ?: Message(),
+    createdAt = LocalDateTime.ofInstant(
+        createdAt?.toInstant() ?: Date().toInstant(),
+        ZoneId.systemDefault()
+    ),
+    deletedAt = LocalDateTime.ofInstant(
+        deletedAt?.toInstant() ?: Date().toInstant(),
+        ZoneId.systemDefault()
+    ),
 )

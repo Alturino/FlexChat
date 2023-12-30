@@ -24,6 +24,8 @@
 
 package com.onirutla.flexchat.domain.models
 
+import java.time.LocalDateTime
+
 data class ConversationMember(
     val id: String = "",
     val userId: String = "",
@@ -32,6 +34,6 @@ data class ConversationMember(
     val photoProfileUrl: String = "",
     val email: String = "",
     val messages: List<Message> = listOf(),
-    val joinedAt: String = "",
-    val leftAt: String = "",
+    val joinedAt: LocalDateTime = LocalDateTime.now(),
+    val leftAt: LocalDateTime = LocalDateTime.MAX,
 )

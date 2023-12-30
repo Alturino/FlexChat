@@ -28,4 +28,5 @@ sealed interface LoginScreenUiEvent {
     data object OnForgotPasswordClick : LoginScreenUiEvent
     data object OnLoginWithGoogleClick : LoginScreenUiEvent
     data object OnDontHaveAccountClick : LoginScreenUiEvent
+    data object NavigateToMainScreen : LoginScreenUiEvent
 }

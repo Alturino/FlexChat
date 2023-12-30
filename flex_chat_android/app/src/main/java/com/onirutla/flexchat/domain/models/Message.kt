@@ -24,6 +24,8 @@
 
 package com.onirutla.flexchat.domain.models
 
+import java.time.LocalDateTime
+
 data class Message(
     val id: String = "",
     val conversationId: String = "",
@@ -32,7 +34,7 @@ data class Message(
     val senderName: String = "",
     val senderPhotoUrl: String = "",
     val messageBody: String = "",
-    val createdAt: String = "",
-    val updatedAt: String = "",
-    val deletedAt: String = "",
+    val createdAt: LocalDateTime = LocalDateTime.now(),
+    val updatedAt: LocalDateTime = LocalDateTime.now(),
+    val deletedAt: LocalDateTime = LocalDateTime.now(),
 )

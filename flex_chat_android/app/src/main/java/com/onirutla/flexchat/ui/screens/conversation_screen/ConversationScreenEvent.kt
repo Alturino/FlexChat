@@ -27,4 +27,5 @@ package com.onirutla.flexchat.ui.screens.conversation_screen
 sealed interface ConversationScreenEvent {
     data class OnDraftMessageChanged(val draftMessage: String) : ConversationScreenEvent
     data object OnDraftMessageSend : ConversationScreenEvent
+    data object OnHandleErrorMessage : ConversationScreenEvent
 }

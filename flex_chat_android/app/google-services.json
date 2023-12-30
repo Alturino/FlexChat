@@ -1,79 +1,33 @@
 {
   "project_info": {
-    "project_number": "503326631122",
-    "firebase_url": "https://flexchat-f75e5-default-rtdb.asia-southeast1.firebasedatabase.app",
-    "project_id": "flexchat-f75e5",
-    "storage_bucket": "flexchat-f75e5.appspot.com"
+    "project_number": "543116269827",
+    "project_id": "flex-chat-d996e",
+    "storage_bucket": "flex-chat-d996e.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:503326631122:android:1a8ebd045d6b48fa36790b",
-        "android_client_info": {
-          "package_name": "com.onirutla.flex_chat"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "503326631122-ddi8nc8dop9lprmccn02p1tqluradg8d.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.onirutla.flex_chat",
-            "certificate_hash": "9cd5ae962c52c291cc59d6c575994b0aab85a0b7"
-          }
-        },
-        {
-          "client_id": "503326631122-oraovrv64cpe81bgj0v7em18vff3i2gc.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.onirutla.flex_chat",
-            "certificate_hash": "30397bebc0cc19c9cac4fa5b945a945c17cd61cf"
-          }
-        },
-        {
-          "client_id": "503326631122-uefht6kpm86d9paq1t7i2snl5a4ag6rv.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyDyVr_IZRF3znl0gww--xSlrqH3ac5emSo"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "503326631122-3bph6rpf0eq2j6uqvr44vucqmuefesmt.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:503326631122:android:49044c37e002337836790b",
+        "mobilesdk_app_id": "1:543116269827:android:53fa1b9c83cf4eba587136",
         "android_client_info": {
           "package_name": "com.onirutla.flexchat"
         }
       },
       "oauth_client": [
         {
-          "client_id": "503326631122-uefht6kpm86d9paq1t7i2snl5a4ag6rv.apps.googleusercontent.com",
+          "client_id": "543116269827-mlp3gfm76q1gjvqrj3k6dg808cb5r221.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyDyVr_IZRF3znl0gww--xSlrqH3ac5emSo"
+          "current_key": "AIzaSyCBsz55e8OkSKRtlMg8LZRgtoXbJTZbzWk"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "503326631122-3bph6rpf0eq2j6uqvr44vucqmuefesmt.apps.googleusercontent.com",
+              "client_id": "543116269827-mlp3gfm76q1gjvqrj3k6dg808cb5r221.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

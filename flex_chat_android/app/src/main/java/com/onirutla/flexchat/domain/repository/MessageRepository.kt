@@ -25,12 +25,14 @@
 package com.onirutla.flexchat.domain.repository
 
 import arrow.core.Either
+import com.onirutla.flexchat.core.data.models.MessageResponse
 import com.onirutla.flexchat.domain.models.Message
 import kotlinx.coroutines.flow.Flow
 
 interface MessageRepository {
-    fun getMessageByUserId(userId: String): List<Message>
+    suspend fun getMessageByUserId(userId: String): Either<Exception, List<Message>>
     suspend fun getMessageByConversationId(conversationId: String): Either<Exception, List<Message>>
     fun observeMessageByConversationId(conversationId: String): Flow<List<Message>>
     suspend fun getMessageByConversationMemberId(conversationMemberId: String): Either<Exception, List<Message>>
+    suspend fun createMessage(messageResponse: MessageResponse): Either<Exception, String>
 }

@@ -24,9 +24,7 @@
 
 package com.onirutla.flexchat.ui.screens.add_new_conversation_screen
 
-import com.onirutla.flexchat.domain.models.User
-
 sealed interface AddNewConversationScreenUiEvent {
     data object OnNavigateUpClick : AddNewConversationScreenUiEvent
-    data class OnUserItemClick(val user: User) : AddNewConversationScreenUiEvent
+    data class OnNavigateToConversationScreen(val conversationId: String) : AddNewConversationScreenUiEvent
 }

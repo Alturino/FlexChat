@@ -24,6 +24,8 @@
 
 package com.onirutla.flexchat.domain.repository
 
+import android.content.Intent
+import android.content.IntentSender
 import arrow.core.Either
 import com.onirutla.flexchat.domain.models.User
 import kotlinx.coroutines.flow.Flow
@@ -32,8 +34,9 @@ interface UserRepository {
     fun getUserByUsername(username: String): Flow<List<User>>
     fun signOut()
     suspend fun login(email: String, password: String): Either<Exception, Unit>
-    suspend fun loginWithGoogle()
+    suspend fun loginWithGoogle(intent: Intent): Either<Exception, User>
     suspend fun registerWithEmailAndPassword(registerArg: RegisterWithUsernameEmailAndPassword): Either<Exception, Unit>
     val currentUser: Flow<User>
     val isLoggedIn: Flow<Boolean>
+    suspend fun getSignInIntentSender(): Either<Exception, IntentSender>
 }

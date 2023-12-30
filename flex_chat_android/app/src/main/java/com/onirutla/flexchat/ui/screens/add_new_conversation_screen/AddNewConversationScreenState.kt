@@ -29,4 +29,6 @@ import com.onirutla.flexchat.domain.models.User
 data class AddNewConversationScreenState(
     val query: String = "",
     val users: List<User> = listOf(),
+    val currentUser: User = User(),
+    val conversationId: String = ""
 )

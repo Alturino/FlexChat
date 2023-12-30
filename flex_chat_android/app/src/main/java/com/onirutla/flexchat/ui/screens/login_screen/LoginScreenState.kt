@@ -30,4 +30,8 @@ data class LoginScreenState(
     val password: String = "",
     val isPasswordError: Boolean? = null,
     val isPasswordVisible: Boolean = false,
+    val isLoginSuccessful: Boolean? = null,
+    val loginErrorMessage: String = "",
+    val isLoginWithGoogleSuccessful: Boolean? = null,
+    val loginWithGoogleErrorMessage: String = "",
 )

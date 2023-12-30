@@ -52,8 +52,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.onirutla.flexchat.R
 import com.onirutla.flexchat.domain.models.Conversation
+import com.onirutla.flexchat.domain.models.Message
 import com.onirutla.flexchat.ui.components.ConversationItem
 import com.onirutla.flexchat.ui.theme.FlexChatTheme
+import java.time.LocalDateTime
+import java.time.ZoneId
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -102,7 +105,6 @@ fun MainScreen(
         ) {
             items(
                 items = state.conversations,
-                key = { it.id }
             ) {
                 ConversationItem(
                     modifier = Modifier.fillMaxWidth(),
@@ -136,9 +138,9 @@ fun MainScreenPreview() {
                         imageUrl = "https://duckduckgo.com/?q=dico",
                         isGroup = false,
                         conversationMembers = listOf(),
-                        latestMessage = "his",
-                        createdAt = "ridiculus",
-                        deletedAt = "sed"
+                        latestMessage = Message(),
+                        createdAt = LocalDateTime.now(ZoneId.systemDefault()),
+                        deletedAt = LocalDateTime.now(ZoneId.systemDefault()),
                     ),
 //                    Conversation(
 //                        id = "dictumst",

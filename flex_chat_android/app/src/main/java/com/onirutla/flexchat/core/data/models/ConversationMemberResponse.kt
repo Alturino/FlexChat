@@ -28,6 +28,8 @@ import com.google.firebase.firestore.IgnoreExtraProperties
 import com.google.firebase.firestore.ServerTimestamp
 import com.onirutla.flexchat.domain.models.ConversationMember
 import com.onirutla.flexchat.domain.models.Message
+import java.time.LocalDateTime
+import java.time.ZoneId
 import java.util.Date
 
 @IgnoreExtraProperties
@@ -50,6 +52,12 @@ fun ConversationMemberResponse.toConversationMember(messages: List<Message>) = C
     username = username,
     photoProfileUrl = photoProfileUrl,
     messages = messages,
-    joinedAt = joinedAt.toString(),
-    leftAt = leftAt.toString()
+    joinedAt = LocalDateTime.ofInstant(
+        joinedAt?.toInstant() ?: Date().toInstant(),
+        ZoneId.systemDefault()
+    ),
+    leftAt = LocalDateTime.ofInstant(
+        leftAt?.toInstant() ?: Date().toInstant(),
+        ZoneId.systemDefault()
+    ),
 )

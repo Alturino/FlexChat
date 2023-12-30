@@ -25,6 +25,7 @@
 package com.onirutla.flexchat.core.data.repository
 
 import arrow.core.Either
+import arrow.fx.coroutines.parMap
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.snapshots
 import com.google.firebase.firestore.toObjects
@@ -34,13 +35,15 @@ import com.onirutla.flexchat.core.data.models.toMessage
 import com.onirutla.flexchat.domain.models.Message
 import com.onirutla.flexchat.domain.repository.MessageRepository
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.tasks.await
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @Singleton
 class FirebaseMessageRepository @Inject constructor(
     private val firebaseFirestore: FirebaseFirestore,
@@ -48,8 +51,20 @@ class FirebaseMessageRepository @Inject constructor(
 
     private val messageCollectionRef = firebaseFirestore.collection(FirebaseCollections.MESSAGES)
 
-    override fun getMessageByUserId(userId: String): List<Message> {
-        TODO("Not yet implemented")
+    override suspend fun getMessageByUserId(
+        userId: String,
+    ): Either<Exception, List<Message>> = try {
+        val messages = messageCollectionRef.whereEqualTo("userId", userId)
+            .get()
+            .await()
+            .toObjects<MessageResponse>()
+            .parMap { it.toMessage() }
+        Either.Right(messages)
+    } catch (e: Exception) {
+        Timber.e(e)
+        if (e is CancellationException)
+            throw e
+        Either.Left(e)
     }
 
     override suspend fun getMessageByConversationId(
@@ -59,7 +74,7 @@ class FirebaseMessageRepository @Inject constructor(
             .get()
             .await()
             .toObjects<MessageResponse>()
-            .map { it.toMessage() }
+            .parMap { it.toMessage() }
         Either.Right(messages)
     } catch (e: Exception) {
         Timber.e(e)
@@ -72,8 +87,9 @@ class FirebaseMessageRepository @Inject constructor(
         conversationId: String,
     ): Flow<List<Message>> = messageCollectionRef.whereEqualTo("conversationId", conversationId)
         .snapshots()
-        .mapNotNull { snapshot ->
-            snapshot.toObjects<MessageResponse>().map { it.toMessage() }
+        .mapLatest { snapshot ->
+            snapshot.toObjects<MessageResponse>().parMap { it.toMessage() }
+                .sortedByDescending { it.createdAt }
         }
 
     override suspend fun getMessageByConversationMemberId(
@@ -84,8 +100,22 @@ class FirebaseMessageRepository @Inject constructor(
             .get()
             .await()
             .toObjects<MessageResponse>()
-            .map { it.toMessage() }
+            .parMap { it.toMessage() }
         Either.Right(messages)
+    } catch (e: Exception) {
+        Timber.e(e)
+        if (e is CancellationException)
+            throw e
+        Either.Left(e)
+    }
+
+    override suspend fun createMessage(
+        messageResponse: MessageResponse,
+    ): Either<Exception, String> = try {
+        val messageId = messageCollectionRef.document().id
+        messageCollectionRef.document(messageId).set(messageResponse.copy(id = messageId))
+            .await()
+        Either.Right(messageId)
     } catch (e: Exception) {
         Timber.e(e)
         if (e is CancellationException)

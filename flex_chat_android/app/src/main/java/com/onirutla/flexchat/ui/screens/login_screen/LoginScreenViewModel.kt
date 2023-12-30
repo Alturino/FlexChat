@@ -24,21 +24,25 @@
 
 package com.onirutla.flexchat.ui.screens.login_screen
 
+import android.content.Intent
+import android.content.IntentSender
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.onirutla.flexchat.core.data.repository.FirebaseUserRepository
+import arrow.core.Either
 import com.onirutla.flexchat.core.util.isValidEmail
+import com.onirutla.flexchat.domain.repository.UserRepository
 import com.onirutla.flexchat.domain.util.isValidPassword
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
 class LoginScreenViewModel @Inject constructor(
-    private val firebaseUserRepository: FirebaseUserRepository,
+    private val userRepository: UserRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(LoginScreenState())
@@ -61,10 +65,16 @@ class LoginScreenViewModel @Inject constructor(
 
             LoginScreenEvent.OnLoginClicked -> {
                 viewModelScope.launch {
-                    firebaseUserRepository.login(
+                    userRepository.login(
                         email = _state.value.email,
                         password = _state.value.password
-                    )
+                    ).onLeft { exception ->
+                        Timber.e(exception)
+                        _state.update { it.copy(isLoginSuccessful = false) }
+                    }.onRight { unit ->
+                        Timber.d("$unit")
+                        _state.update { it.copy(isLoginSuccessful = true) }
+                    }
                 }
             }
 
@@ -76,11 +86,34 @@ class LoginScreenViewModel @Inject constructor(
                     )
                 }
             }
-
-            LoginScreenEvent.OnLoginWithGoogleClicked -> {
-
-            }
         }
     }
+
+    fun loginWithGoogle(intent: Intent) {
+        viewModelScope.launch {
+            userRepository.loginWithGoogle(intent)
+                .onLeft { exception ->
+                    Timber.e("loginFailed with exception: $exception")
+                    _state.update {
+                        it.copy(
+                            isLoginWithGoogleSuccessful = false,
+                            loginWithGoogleErrorMessage = exception.localizedMessage.orEmpty()
+                        )
+                    }
+                }
+                .onRight { user ->
+                    Timber.d("loginSuccessful: $user")
+                    _state.update {
+                        it.copy(
+                            isLoginWithGoogleSuccessful = true,
+                            loginWithGoogleErrorMessage = ""
+                        )
+                    }
+                }
+        }
+    }
+
+    suspend fun getSignInIntentSender(): Either<Exception, IntentSender> =
+        userRepository.getSignInIntentSender()
 
 }

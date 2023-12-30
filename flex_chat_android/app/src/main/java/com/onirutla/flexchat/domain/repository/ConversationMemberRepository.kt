@@ -24,10 +24,14 @@
 
 package com.onirutla.flexchat.domain.repository
 
+import arrow.core.Either
+import com.onirutla.flexchat.core.data.models.ConversationMemberResponse
 import com.onirutla.flexchat.domain.models.ConversationMember
+import kotlinx.coroutines.flow.Flow
 
 interface ConversationMemberRepository {
-    suspend fun getConversationMemberByUserId(userId: String): List<ConversationMember>
-    suspend fun getConversationMemberByConversationId(conversationId: String): List<ConversationMember>
-    suspend fun createConversationMember(conversationMember: ConversationMember)
+    suspend fun getConversationMemberByUserId(userId: String): Either<Exception, List<ConversationMember>>
+    suspend fun getConversationMemberByConversationId(conversationId: String): Either<Exception, List<ConversationMember>>
+    suspend fun createConversationMember(conversationMemberResponse: ConversationMemberResponse): Either<Exception, String>
+    fun observeConversationMemberByUserId(userId: String): Flow<List<ConversationMember>>
 }
