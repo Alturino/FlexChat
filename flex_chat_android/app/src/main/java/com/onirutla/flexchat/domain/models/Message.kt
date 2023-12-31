@@ -24,6 +24,7 @@
 
 package com.onirutla.flexchat.domain.models
 
+import com.onirutla.flexchat.core.data.models.MessageResponse
 import java.time.LocalDateTime
 
 data class Message(
@@ -38,3 +39,15 @@ data class Message(
     val updatedAt: LocalDateTime = LocalDateTime.now(),
     val deletedAt: LocalDateTime = LocalDateTime.now(),
 )
+
+fun Message.toMessageResponse() = MessageResponse(
+    id = id,
+    conversationId = conversationId,
+    conversationMemberId = conversationMemberId,
+    userId = userId,
+    senderName = senderName,
+    senderPhotoUrl = senderPhotoUrl,
+    messageBody = messageBody,
+)
+
+fun List<Message>.toMessageResponses() = map { it.toMessageResponse() }

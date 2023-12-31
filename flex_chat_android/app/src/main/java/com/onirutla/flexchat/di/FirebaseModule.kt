@@ -28,6 +28,7 @@ import android.content.Context
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.auth.api.identity.SignInClient
 import com.google.firebase.FirebaseApp
+import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.firestore.FirebaseFirestore
@@ -50,24 +51,25 @@ object FirebaseModule {
 
     @Provides
     @Singleton
-    fun provideFirebaseAuth(firebaseApp: FirebaseApp): FirebaseAuth = if (BuildConfig.DEBUG) {
-        FirebaseAuth.getInstance(firebaseApp).apply {
-            useEmulator("192.168.1.6", 9099)
-        }
-    } else {
-        FirebaseAuth.getInstance(firebaseApp)
+    fun provideFirebaseAuth(firebaseApp: FirebaseApp): FirebaseAuth {
+//        if (BuildConfig.DEBUG) {
+//            return FirebaseAuth.getInstance(firebaseApp).apply {
+//                useEmulator("192.168.1.6", 9099)
+//            }
+//        }
+        return FirebaseAuth.getInstance(firebaseApp)
     }
 
     @Provides
     @Singleton
-    fun provideFirebaseDatabase(firebaseApp: FirebaseApp): FirebaseDatabase =
-        if (BuildConfig.DEBUG) {
-            FirebaseDatabase.getInstance(firebaseApp).apply {
-                useEmulator("192.168.1.6", 9000)
-            }
-        } else {
-            FirebaseDatabase.getInstance(firebaseApp)
-        }
+    fun provideFirebaseDatabase(firebaseApp: FirebaseApp): FirebaseDatabase {
+//        if (BuildConfig.DEBUG) {
+//            return FirebaseDatabase.getInstance(firebaseApp).apply {
+//                useEmulator("192.168.1.6", 9000)
+//            }
+//        }
+        return FirebaseDatabase.getInstance(firebaseApp)
+    }
 
     @Provides
     @Singleton
@@ -75,14 +77,19 @@ object FirebaseModule {
 
     @Provides
     @Singleton
-    fun provideFirebaseFirestore(firebaseApp: FirebaseApp): FirebaseFirestore =
-        if (BuildConfig.DEBUG) {
-            FirebaseFirestore.getInstance(firebaseApp).apply {
-                useEmulator("192.168.1.6", 8080)
-            }
-        } else {
-            FirebaseFirestore.getInstance(firebaseApp)
-        }
+    fun provideFirebaseFirestore(firebaseApp: FirebaseApp): FirebaseFirestore {
+//        if (BuildConfig.DEBUG) {
+//            return FirebaseFirestore.getInstance(firebaseApp).apply {
+//                useEmulator("192.168.1.6", 8080)
+//            }
+//        }
+        return FirebaseFirestore.getInstance(firebaseApp)
+    }
+
+    @Provides
+    @Singleton
+    fun provideFirebaseAnalytics(@ApplicationContext context: Context): FirebaseAnalytics =
+        FirebaseAnalytics.getInstance(context)
 
     @Provides
     @Singleton

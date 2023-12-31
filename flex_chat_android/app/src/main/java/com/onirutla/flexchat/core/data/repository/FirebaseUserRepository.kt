@@ -164,7 +164,7 @@ class FirebaseUserRepository @Inject constructor(
                     isOnline = false,
                 )
             }
-            saveUserToFireStore(userResponse)
+            saveUserToFireStore(userResponse).onLeft { throw it }
             Either.Right(userResponse.toUser())
         } else {
             Either.Left(NullPointerException("Sign in user is null"))
@@ -213,7 +213,9 @@ class FirebaseUserRepository @Inject constructor(
     }
 
     override fun getUserByUsername(username: String): Flow<List<User>> = userRef
-        .whereEqualTo("username", username)
+        .orderBy("username")
+        .startAt(username)
+        .endAt()
         .snapshots()
         .onEach { Timber.d("$it") }
         .map { snapshot -> snapshot.map { it.toObject<UserResponse>().toUser() } }

@@ -50,6 +50,7 @@ import com.onirutla.flexchat.ui.screens.conversation_screen.ConversationScreen
 import com.onirutla.flexchat.ui.screens.conversation_screen.ConversationScreenUiEvent
 import com.onirutla.flexchat.ui.screens.conversation_screen.ConversationScreenViewModel
 import com.onirutla.flexchat.ui.screens.login_screen.LoginScreen
+import com.onirutla.flexchat.ui.screens.login_screen.LoginScreenEvent
 import com.onirutla.flexchat.ui.screens.login_screen.LoginScreenUiEvent
 import com.onirutla.flexchat.ui.screens.login_screen.LoginScreenViewModel
 import com.onirutla.flexchat.ui.screens.main_screen.MainScreen
@@ -62,6 +63,7 @@ import com.onirutla.flexchat.ui.screens.register_screen.RegisterScreen
 import com.onirutla.flexchat.ui.screens.register_screen.RegisterScreenUiEvent
 import com.onirutla.flexchat.ui.screens.register_screen.RegisterScreenViewModel
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 @Composable
 fun FlexChatNavigation(
@@ -129,6 +131,8 @@ fun FlexChatNavigation(
                 onResult = {
                     if (it.resultCode == RESULT_OK) {
                         vm.loginWithGoogle(it.data ?: return@rememberLauncherForActivityResult)
+                    } else {
+                        Timber.e("Login failed with resultCode: ${it.resultCode}")
                     }
                 }
             )

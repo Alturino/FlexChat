@@ -37,6 +37,7 @@ import com.onirutla.flexchat.domain.repository.MessageRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.tasks.await
 import timber.log.Timber
@@ -49,12 +50,12 @@ class FirebaseMessageRepository @Inject constructor(
     private val firebaseFirestore: FirebaseFirestore,
 ) : MessageRepository {
 
-    private val messageCollectionRef = firebaseFirestore.collection(FirebaseCollections.MESSAGES)
+    private val messageRef = firebaseFirestore.collection(FirebaseCollections.MESSAGES)
 
     override suspend fun getMessageByUserId(
         userId: String,
     ): Either<Exception, List<Message>> = try {
-        val messages = messageCollectionRef.whereEqualTo("userId", userId)
+        val messages = messageRef.whereEqualTo("userId", userId)
             .get()
             .await()
             .toObjects<MessageResponse>()
@@ -70,7 +71,7 @@ class FirebaseMessageRepository @Inject constructor(
     override suspend fun getMessageByConversationId(
         conversationId: String,
     ): Either<Exception, List<Message>> = try {
-        val messages = messageCollectionRef.whereEqualTo("conversationId", conversationId)
+        val messages = messageRef.whereEqualTo("conversationId", conversationId)
             .get()
             .await()
             .toObjects<MessageResponse>()
@@ -85,7 +86,7 @@ class FirebaseMessageRepository @Inject constructor(
 
     override fun observeMessageByConversationId(
         conversationId: String,
-    ): Flow<List<Message>> = messageCollectionRef.whereEqualTo("conversationId", conversationId)
+    ): Flow<List<Message>> = messageRef.whereEqualTo("conversationId", conversationId)
         .snapshots()
         .mapLatest { snapshot ->
             snapshot.toObjects<MessageResponse>().parMap { it.toMessage() }
@@ -95,7 +96,7 @@ class FirebaseMessageRepository @Inject constructor(
     override suspend fun getMessageByConversationMemberId(
         conversationMemberId: String,
     ): Either<Exception, List<Message>> = try {
-        val messages = messageCollectionRef
+        val messages = messageRef
             .whereEqualTo("conversationMemberId", conversationMemberId)
             .get()
             .await()
@@ -112,8 +113,8 @@ class FirebaseMessageRepository @Inject constructor(
     override suspend fun createMessage(
         messageResponse: MessageResponse,
     ): Either<Exception, String> = try {
-        val messageId = messageCollectionRef.document().id
-        messageCollectionRef.document(messageId).set(messageResponse.copy(id = messageId))
+        val messageId = messageRef.document().id
+        messageRef.document(messageId).set(messageResponse.copy(id = messageId))
             .await()
         Either.Right(messageId)
     } catch (e: Exception) {

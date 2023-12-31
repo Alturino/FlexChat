@@ -69,3 +69,5 @@ fun MessageResponse.toMessage() = Message(
         ZoneId.systemDefault()
     ),
 )
+
+fun List<MessageResponse>.toMessages() = map { it.toMessage() }

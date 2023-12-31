@@ -14,6 +14,22 @@
       },
       "oauth_client": [
         {
+          "client_id": "543116269827-3bro3vglru2li9ugbtoh1p68m9mv6in6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.onirutla.flexchat",
+            "certificate_hash": "9cd5ae962c52c291cc59d6c575994b0aab85a0b7"
+          }
+        },
+        {
+          "client_id": "543116269827-8nrpdq5j896h5ln4bbo2h2cgrs4andks.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.onirutla.flexchat",
+            "certificate_hash": "54feb1c17700abb08893a412da3a5f30d4980cbd"
+          }
+        },
+        {
           "client_id": "543116269827-mlp3gfm76q1gjvqrj3k6dg808cb5r221.apps.googleusercontent.com",
           "client_type": 3
         }

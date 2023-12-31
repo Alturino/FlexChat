@@ -34,7 +34,6 @@ import com.onirutla.flexchat.domain.repository.MessageRepository
 import com.onirutla.flexchat.domain.repository.UserRepository
 import dagger.Binds
 import dagger.Module
-import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton

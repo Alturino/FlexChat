@@ -24,6 +24,7 @@
 
 package com.onirutla.flexchat.domain.models
 
+import com.onirutla.flexchat.core.data.models.ConversationMemberResponse
 import java.time.LocalDateTime
 
 data class ConversationMember(
@@ -37,3 +38,14 @@ data class ConversationMember(
     val joinedAt: LocalDateTime = LocalDateTime.now(),
     val leftAt: LocalDateTime = LocalDateTime.MAX,
 )
+
+fun ConversationMember.toConversationMemberResponse() = ConversationMemberResponse(
+    id = id,
+    userId = userId,
+    conversationId = conversationId,
+    username = username,
+    photoProfileUrl = photoProfileUrl,
+)
+
+fun List<ConversationMember>.toConversationMemberResponses() =
+    map { it.toConversationMemberResponse() }
