@@ -27,6 +27,7 @@ package com.onirutla.flexchat.core.data.repository
 import arrow.core.Either
 import arrow.fx.coroutines.parMap
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.snapshots
 import com.google.firebase.firestore.toObjects
 import com.onirutla.flexchat.core.data.FirebaseCollections
@@ -37,7 +38,7 @@ import com.onirutla.flexchat.domain.repository.MessageRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.tasks.await
 import timber.log.Timber
@@ -84,14 +85,27 @@ class FirebaseMessageRepository @Inject constructor(
         Either.Left(e)
     }
 
+    override val observeMessage: Flow<List<Message>>
+        get() = messageRef.snapshots().mapLatest { snapshot ->
+            snapshot.toObjects<MessageResponse>().parMap { it.toMessage() }
+        }
+
     override fun observeMessageByConversationId(
         conversationId: String,
     ): Flow<List<Message>> = messageRef.whereEqualTo("conversationId", conversationId)
+        .orderBy("createdAt", Query.Direction.DESCENDING)
         .snapshots()
         .mapLatest { snapshot ->
             snapshot.toObjects<MessageResponse>().parMap { it.toMessage() }
-                .sortedByDescending { it.createdAt }
         }
+
+    override fun observeMessageByUserId(userId: String): Flow<List<Message>> = messageRef
+        .whereEqualTo("userId", userId)
+        .orderBy("createdAt", Query.Direction.DESCENDING)
+        .snapshots()
+        .mapLatest { snapshot ->
+            snapshot.toObjects<MessageResponse>().parMap { it.toMessage() }
+        }.catch { Timber.e("observeMessageByUserId on line 107: $it") }
 
     override suspend fun getMessageByConversationMemberId(
         conversationMemberId: String,

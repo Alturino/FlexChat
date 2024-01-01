@@ -35,4 +35,6 @@ interface MessageRepository {
     fun observeMessageByConversationId(conversationId: String): Flow<List<Message>>
     suspend fun getMessageByConversationMemberId(conversationMemberId: String): Either<Exception, List<Message>>
     suspend fun createMessage(messageResponse: MessageResponse): Either<Exception, String>
+    fun observeMessageByUserId(userId: String): Flow<List<Message>>
+    val observeMessage: Flow<List<Message>>
 }

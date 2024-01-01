@@ -35,8 +35,10 @@ class ConversationScreenViewModel @Inject constructor(
 
     operator fun invoke(conversationId: String) {
         viewModelScope.launch {
-            val conversation = conversationRepository.getConversationById(conversationId)
-            _state.update { it.copy(conversation = conversation) }
+            conversationRepository.getConversationById(conversationId)
+                .onRight { conversation ->
+                    _state.update { it.copy(conversation = conversation) }
+                }
         }
     }
 

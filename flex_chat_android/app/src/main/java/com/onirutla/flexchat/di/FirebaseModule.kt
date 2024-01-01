@@ -52,22 +52,22 @@ object FirebaseModule {
     @Provides
     @Singleton
     fun provideFirebaseAuth(firebaseApp: FirebaseApp): FirebaseAuth {
-//        if (BuildConfig.DEBUG) {
-//            return FirebaseAuth.getInstance(firebaseApp).apply {
-//                useEmulator("192.168.1.6", 9099)
-//            }
-//        }
+        if (BuildConfig.DEBUG) {
+            return FirebaseAuth.getInstance(firebaseApp).apply {
+                useEmulator("10.0.2.2", 9099)
+            }
+        }
         return FirebaseAuth.getInstance(firebaseApp)
     }
 
     @Provides
     @Singleton
     fun provideFirebaseDatabase(firebaseApp: FirebaseApp): FirebaseDatabase {
-//        if (BuildConfig.DEBUG) {
-//            return FirebaseDatabase.getInstance(firebaseApp).apply {
-//                useEmulator("192.168.1.6", 9000)
-//            }
-//        }
+        if (BuildConfig.DEBUG) {
+            return FirebaseDatabase.getInstance(firebaseApp).apply {
+                useEmulator("10.0.2.2", 9000)
+            }
+        }
         return FirebaseDatabase.getInstance(firebaseApp)
     }
 
@@ -78,11 +78,11 @@ object FirebaseModule {
     @Provides
     @Singleton
     fun provideFirebaseFirestore(firebaseApp: FirebaseApp): FirebaseFirestore {
-//        if (BuildConfig.DEBUG) {
-//            return FirebaseFirestore.getInstance(firebaseApp).apply {
-//                useEmulator("192.168.1.6", 8080)
-//            }
-//        }
+        if (BuildConfig.DEBUG) {
+            return FirebaseFirestore.getInstance(firebaseApp).apply {
+                useEmulator("10.0.2.2", 8080)
+            }
+        }
         return FirebaseFirestore.getInstance(firebaseApp)
     }
 

@@ -110,7 +110,7 @@ class AddNewConversationScreenViewModel @Inject constructor(
                             slug = conversationMemberNames.sorted()
                                 .joinToString(separator = ",") { it.lowercase() },
                         )
-                    ).onLeft { Timber.e(it) }
+                    ).onRight { Timber.d("conversationId: $it") }
                         .fold(ifLeft = { "" }, ifRight = { it })
 
                     if (conversationId.isNotBlank() or conversationId.isNotEmpty()) {
@@ -125,7 +125,6 @@ class AddNewConversationScreenViewModel @Inject constructor(
                             conversationMemberRepository.createConversationMember(
                                 conversationMemberResponse = conversationMemberResponse
                             ).onRight { Timber.d("conversationMemberId $it") }
-                                .onLeft { Timber.e(it) }
                         }
                         _state.update { it.copy(conversationId = conversationId) }
                     }

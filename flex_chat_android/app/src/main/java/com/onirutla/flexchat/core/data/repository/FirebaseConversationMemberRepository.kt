@@ -27,6 +27,7 @@ package com.onirutla.flexchat.core.data.repository
 import arrow.core.Either
 import arrow.fx.coroutines.parMap
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.snapshots
 import com.google.firebase.firestore.toObjects
 import com.onirutla.flexchat.core.data.FirebaseCollections
@@ -64,7 +65,6 @@ class FirebaseConversationMemberRepository @Inject constructor(
             .parMap { conversationMemberResponse ->
                 val messages = messageRepository
                     .getMessageByConversationMemberId(conversationMemberId = conversationMemberResponse.id)
-                    .onLeft { Timber.e(it) }
                     .onRight { Timber.d("$it") }
                     .fold(ifLeft = { listOf() }, ifRight = { it })
                 conversationMemberResponse.toConversationMember(messages = messages)
@@ -79,32 +79,45 @@ class FirebaseConversationMemberRepository @Inject constructor(
     override fun observeConversationMemberByUserId(
         userId: String,
     ): Flow<List<ConversationMember>> = conversationMemberRef.whereEqualTo("userId", userId)
+        .orderBy("joinedAt", Query.Direction.DESCENDING)
         .snapshots()
         .mapLatest { snapshot ->
             snapshot.toObjects<ConversationMemberResponse>()
                 .parMap { conversationMemberResponse ->
                     val messages = messageRepository
                         .getMessageByConversationMemberId(conversationMemberId = conversationMemberResponse.id)
-                        .onLeft { Timber.e(it) }
                         .onRight { Timber.d("$it") }
                         .fold(ifLeft = { listOf() }, ifRight = { it })
                     conversationMemberResponse.toConversationMember(messages = messages)
                 }
-                .sortedByDescending { it.joinedAt }
         }
+
+    override fun observeConversationMemberByConversationId(conversationId: String) =
+        conversationMemberRef.whereEqualTo("conversationId", conversationId)
+            .snapshots()
+            .mapLatest { snapshot ->
+                snapshot.toObjects<ConversationMemberResponse>()
+                    .parMap { conversationMemberResponse ->
+                        val messages = messageRepository
+                            .getMessageByConversationMemberId(conversationMemberId = conversationMemberResponse.id)
+                            .onRight { Timber.d("$it") }
+                            .fold(ifLeft = { listOf() }, ifRight = { it })
+                        conversationMemberResponse.toConversationMember(messages = messages)
+                    }
+            }
 
     override suspend fun getConversationMemberByConversationId(
         conversationId: String,
     ): Either<Exception, List<ConversationMember>> = try {
         val conversationMembers = conversationMemberRef
             .whereEqualTo("conversationId", conversationId)
+            .orderBy("joinedAt", Query.Direction.DESCENDING)
             .get()
             .await()
             .toObjects<ConversationMemberResponse>()
             .parMap { conversationMemberResponse ->
                 val messages = messageRepository
                     .getMessageByConversationMemberId(conversationMemberId = conversationMemberResponse.id)
-                    .onLeft { Timber.e("$it") }
                     .onRight { Timber.d("$it") }
                     .fold(ifLeft = { listOf() }, ifRight = { it })
                 conversationMemberResponse.toConversationMember(messages = messages)

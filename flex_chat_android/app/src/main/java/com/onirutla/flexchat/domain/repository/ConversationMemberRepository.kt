@@ -34,4 +34,5 @@ interface ConversationMemberRepository {
     suspend fun getConversationMemberByConversationId(conversationId: String): Either<Exception, List<ConversationMember>>
     suspend fun createConversationMember(conversationMemberResponse: ConversationMemberResponse): Either<Exception, String>
     fun observeConversationMemberByUserId(userId: String): Flow<List<ConversationMember>>
+    fun observeConversationMemberByConversationId(conversationId: String): Flow<List<ConversationMember>>
 }

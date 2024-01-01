@@ -25,21 +25,23 @@
 package com.onirutla.flexchat.core.data.repository
 
 import arrow.core.Either
+import arrow.core.getOrElse
 import arrow.fx.coroutines.parMap
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.snapshots
+import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.toObject
 import com.google.firebase.firestore.toObjects
 import com.onirutla.flexchat.core.data.FirebaseCollections
 import com.onirutla.flexchat.core.data.models.ConversationResponse
 import com.onirutla.flexchat.core.data.models.toConversation
 import com.onirutla.flexchat.domain.models.Conversation
+import com.onirutla.flexchat.domain.models.Message
 import com.onirutla.flexchat.domain.repository.ConversationMemberRepository
 import com.onirutla.flexchat.domain.repository.ConversationRepository
+import com.onirutla.flexchat.domain.repository.MessageRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.filterNot
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.tasks.await
 import timber.log.Timber
 import java.util.concurrent.CancellationException
@@ -50,6 +52,7 @@ import javax.inject.Singleton
 class FirebaseConversationRepository @Inject constructor(
     private val firebaseFirestore: FirebaseFirestore,
     private val conversationMemberRepository: ConversationMemberRepository,
+    private val messageRepository: MessageRepository,
 ) : ConversationRepository {
 
     private val conversationRef = firebaseFirestore.collection(FirebaseCollections.CONVERSATIONS)
@@ -59,19 +62,18 @@ class FirebaseConversationRepository @Inject constructor(
     ): Either<Exception, List<Conversation>> = try {
         val userAsConversationMembers = conversationMemberRepository
             .getConversationMemberByUserId(userId)
-            .onLeft { Timber.e(it) }
             .onRight { Timber.d("conversationMembers Right: $it") }
             .fold(ifLeft = { listOf() }, ifRight = { it })
 
         val conversations = userAsConversationMembers.flatMap { userAsConversationMember ->
             conversationRef.whereEqualTo("id", userAsConversationMember.conversationId)
+                .orderBy("createdAt", Query.Direction.DESCENDING)
                 .get()
                 .await()
                 .toObjects<ConversationResponse>()
                 .map { conversationResponse ->
                     val conversationMembers = conversationMemberRepository
                         .getConversationMemberByConversationId(conversationResponse.id)
-                        .onLeft { Timber.e(it) }
                         .onRight { Timber.d("$it") }
                         .fold(ifLeft = { listOf() }, ifRight = { it })
 
@@ -89,40 +91,81 @@ class FirebaseConversationRepository @Inject constructor(
         Either.Left(e)
     }
 
-    override fun observeConversationByUserIdAndConversationId(
-        userId: String,
-        conversationId: String,
-    ): Flow<List<Conversation>> = conversationMemberRepository
-        .observeConversationMemberByUserId(userId)
-        .flatMapLatest {
-            conversationRef.whereEqualTo("id", conversationId)
-                .snapshots()
-                .map { it.toObjects<ConversationResponse>() }
-                .filterNot { it.isEmpty() }
-                .map { conversationResponses ->
-                    conversationResponses.parMap { conversationResponse ->
-                        val conversationMembers = conversationMemberRepository
-                            .getConversationMemberByConversationId(conversationResponse.id)
-                            .onLeft { Timber.e("on line 106:61 $it") }
-                            .onRight { Timber.d("$it") }
-                            .fold(ifLeft = { listOf() }, ifRight = { it })
+//    override fun observeConversationByUserId(userId: String): Flow<List<Conversation>> {
+//        val userConversations = conversationMemberRepository
+//            .observeConversationMemberByUserId(userId)
+//            .map { conversationMembers ->
+//                conversationMembers.parMap { conversationMember ->
+//                    getConversationById(conversationMember.conversationId)
+//                        .onRight { Timber.d("$it") }
+//                        .fold(ifLeft = { Conversation() }, ifRight = { it })
+//                }
+//            }
+//        return combine(
+//            userConversations,
+//            messageRepository.observeMessage
+//        ) { conversations, messages ->
+////            messages.flatMap { message ->
+////                conversations.filter { conversation -> conversation.id == message.conversationId }
+////            }.map { conversation ->
+////                val latestMessage = messages.filter { it.conversationId == conversation.id }
+////                    .maxByOrNull { it.createdAt }
+////                if (latestMessage != null)
+////                    conversation.copy(latestMessage = latestMessage)
+////                else
+////                    conversation
+////            }.sortedByDescending { it.latestMessage.createdAt }
+//            conversations.flatMap { conversation ->
+//                messages.filter { message -> message.conversationId == conversation.id }
+//                    .map {
+//                        val latestMessage = messages.filter { it.conversationId == conversation.id }
+//                            .maxByOrNull { it.createdAt }
+//                        if (latestMessage != null)
+//                            conversation.copy(latestMessage = latestMessage)
+//                        else
+//                            conversation
+//                    }
+//            }
+//        }.distinctUntilChanged { old, new -> old == new }
+//    }
 
-                        conversationResponse.toConversation(
-                            conversationMembers,
-                            conversationMembers.flatMap { it.messages }
-                        )
-                    }
+
+    override suspend fun observeConversationByUserId(userId: String): Flow<List<Conversation>> {
+        val conversationByUserId = conversationMemberRepository
+            .observeConversationMemberByUserId(userId)
+            .mapLatest { conversationMembers ->
+                conversationMembers.parMap { conversationMember ->
+                    getConversationById(conversationMember.conversationId)
+                        .getOrElse { Conversation() }
                 }
-        }
+            }
 
-    override suspend fun getConversationById(conversationId: String): Conversation {
+        return combine(
+            conversationByUserId,
+            messageRepository.observeMessage
+        ) { conversations, messages ->
+            conversations.parMap { conversation ->
+                val filteredMessages = messages
+                    .filter { it.conversationId == conversation.id }
+                conversation.copy(
+                    messages = filteredMessages,
+                    latestMessage = filteredMessages.maxByOrNull { it.createdAt } ?: Message()
+                )
+            }
+        }
+    }
+
+
+    override suspend fun getConversationById(
+        conversationId: String,
+    ): Either<Exception, Conversation> = try {
         val conversationMembers = conversationMemberRepository
             .getConversationMemberByConversationId(conversationId)
             .onLeft { Timber.e("on line 121:33 $it") }
             .onRight { Timber.d("$it") }
             .fold(ifLeft = { listOf() }, ifRight = { it })
 
-        return conversationRef
+        val result = conversationRef
             .document(conversationId)
             .get()
             .await()
@@ -132,6 +175,12 @@ class FirebaseConversationRepository @Inject constructor(
                 messages = conversationMembers.flatMap { it.messages }
                     .sortedByDescending { it.createdAt }
             ) ?: Conversation()
+        Either.Right(result)
+    } catch (e: Exception) {
+        Timber.e(e)
+        if (e is CancellationException)
+            throw e
+        Either.Left(e)
     }
 
     override suspend fun createConversation(

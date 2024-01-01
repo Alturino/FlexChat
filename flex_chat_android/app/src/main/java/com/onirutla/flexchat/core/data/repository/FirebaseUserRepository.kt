@@ -215,7 +215,7 @@ class FirebaseUserRepository @Inject constructor(
     override fun getUserByUsername(username: String): Flow<List<User>> = userRef
         .orderBy("username")
         .startAt(username)
-        .endAt()
+        .endAt("$username\uf8ff")
         .snapshots()
         .onEach { Timber.d("$it") }
         .map { snapshot -> snapshot.map { it.toObject<UserResponse>().toUser() } }
