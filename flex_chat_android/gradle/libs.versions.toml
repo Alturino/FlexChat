@@ -55,6 +55,7 @@ firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "fir
 firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics" }
 firebase-database = { module = "com.google.firebase:firebase-database" }
 firebase-firestore = { module = "com.google.firebase:firebase-firestore" }
+firebase-functions = { module = "com.google.firebase:firebase-functions" }
 firebase-messaging = { module = "com.google.firebase:firebase-messaging" }
 firebase-perf = { group = "com.google.firebase", name = "firebase-perf" }
 firebase-storage = { module = "com.google.firebase:firebase-storage" }

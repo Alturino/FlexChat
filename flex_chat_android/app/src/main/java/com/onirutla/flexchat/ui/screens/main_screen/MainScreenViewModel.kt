@@ -2,6 +2,7 @@ package com.onirutla.flexchat.ui.screens.main_screen
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.messaging.FirebaseMessaging
 import com.onirutla.flexchat.domain.repository.ConversationRepository
 import com.onirutla.flexchat.domain.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -10,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNot
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
@@ -23,6 +25,7 @@ import javax.inject.Inject
 @HiltViewModel
 class MainScreenViewModel @Inject constructor(
     private val userRepository: UserRepository,
+    private val firebaseMessaging: FirebaseMessaging,
     private val conversationRepository: ConversationRepository,
 ) : ViewModel() {
 
@@ -45,6 +48,14 @@ class MainScreenViewModel @Inject constructor(
                 }.collect { conversations ->
                     _state.update { it.copy(conversations = conversations) }
                 }
+            }
+            launch {
+                _state.mapLatest { it.conversations }
+                    .filterNot { it.isEmpty() }
+                    .distinctUntilChanged { old, new -> old == new }
+                    .collect { conversations ->
+                        conversations.forEach { firebaseMessaging.subscribeToTopic(it.id) }
+                    }
             }
         }
     }

@@ -27,6 +27,7 @@ package com.onirutla.flexchat.domain.repository
 import android.content.Intent
 import android.content.IntentSender
 import arrow.core.Either
+import com.onirutla.flexchat.domain.models.RegisterWithUsernameEmailAndPassword
 import com.onirutla.flexchat.domain.models.User
 import kotlinx.coroutines.flow.Flow
 

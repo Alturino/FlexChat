@@ -89,6 +89,7 @@ dependencies {
     implementation(libs.firebase.messaging)
     implementation(libs.firebase.perf)
     implementation(libs.firebase.storage)
+    implementation(libs.firebase.functions)
 
     // Lifecycle
     implementation(libs.androidx.lifecycle.common)

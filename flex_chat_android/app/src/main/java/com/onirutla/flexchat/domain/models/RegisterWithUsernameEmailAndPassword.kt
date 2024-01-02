@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package com.onirutla.flexchat.domain.repository
+package com.onirutla.flexchat.domain.models
 
 data class RegisterWithUsernameEmailAndPassword(
     val username: String,

@@ -39,7 +39,7 @@ import com.onirutla.flexchat.core.data.FirebaseCollections
 import com.onirutla.flexchat.core.data.models.UserResponse
 import com.onirutla.flexchat.core.data.models.toUser
 import com.onirutla.flexchat.domain.models.User
-import com.onirutla.flexchat.domain.repository.RegisterWithUsernameEmailAndPassword
+import com.onirutla.flexchat.domain.models.RegisterWithUsernameEmailAndPassword
 import com.onirutla.flexchat.domain.repository.UserRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi

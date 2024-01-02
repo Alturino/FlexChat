@@ -24,6 +24,7 @@
 
 package com.onirutla.flexchat.ui
 
+import android.Manifest
 import android.app.Activity.RESULT_OK
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
@@ -50,7 +51,6 @@ import com.onirutla.flexchat.ui.screens.conversation_screen.ConversationScreen
 import com.onirutla.flexchat.ui.screens.conversation_screen.ConversationScreenUiEvent
 import com.onirutla.flexchat.ui.screens.conversation_screen.ConversationScreenViewModel
 import com.onirutla.flexchat.ui.screens.login_screen.LoginScreen
-import com.onirutla.flexchat.ui.screens.login_screen.LoginScreenEvent
 import com.onirutla.flexchat.ui.screens.login_screen.LoginScreenUiEvent
 import com.onirutla.flexchat.ui.screens.login_screen.LoginScreenViewModel
 import com.onirutla.flexchat.ui.screens.main_screen.MainScreen
@@ -84,6 +84,7 @@ fun FlexChatNavigation(
         }
     })
 
+
     NavHost(
         modifier = modifier,
         navController = navController,
@@ -96,6 +97,22 @@ fun FlexChatNavigation(
         ) { backStackEntry ->
             val vm: MainScreenViewModel = hiltViewModel()
             val state by vm.state.collectAsStateWithLifecycle()
+
+            val requestNotificationPermissionLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.RequestPermission(),
+                onResult = { isGranted ->
+                    if (isGranted) {
+                        Timber.d("Notification permission isGranted: $isGranted")
+                    } else {
+                        Timber.e("Notification permission isNotGranted: ${!isGranted}")
+                    }
+                }
+            )
+
+            LaunchedEffect(key1 = Unit, block = {
+                requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                return@LaunchedEffect
+            })
 
             MainScreen(
                 state = state,

@@ -25,15 +25,22 @@
 package com.onirutla.flexchat
 
 import android.app.Application
+import com.google.firebase.functions.FirebaseFunctions
 import dagger.hilt.android.HiltAndroidApp
 import timber.log.Timber
+import javax.inject.Inject
 
 @HiltAndroidApp
 class App : Application() {
+
+    @Inject
+    lateinit var firebaseFunctions: FirebaseFunctions
+
     override fun onCreate() {
         super.onCreate()
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
         }
+        firebaseFunctions
     }
 }

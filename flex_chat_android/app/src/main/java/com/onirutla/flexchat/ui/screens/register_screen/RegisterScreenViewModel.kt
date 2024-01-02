@@ -27,7 +27,7 @@ package com.onirutla.flexchat.ui.screens.register_screen
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.onirutla.flexchat.core.util.isValidEmail
-import com.onirutla.flexchat.domain.repository.RegisterWithUsernameEmailAndPassword
+import com.onirutla.flexchat.domain.models.RegisterWithUsernameEmailAndPassword
 import com.onirutla.flexchat.domain.repository.UserRepository
 import com.onirutla.flexchat.domain.util.isValidPassword
 import dagger.hilt.android.lifecycle.HiltViewModel
