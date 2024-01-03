@@ -165,15 +165,15 @@ fun FlexChatNavigation(
                 onUiEvent = {
                     when (it) {
                         ProfileScreenUiEvent.OnChangeProfilePhotoClick -> {
-
+                            // TODO: Implement change profile picture
                         }
 
                         ProfileScreenUiEvent.OnChangeStatusClick -> {
-
+                            // TODO: Implement change status
                         }
 
                         ProfileScreenUiEvent.OnChangeUsernameClick -> {
-
+                            // TODO: Implement change username
                         }
 
                         ProfileScreenUiEvent.OnNavigateUpClick -> {
@@ -197,11 +197,8 @@ fun FlexChatNavigation(
             val vm: ConversationScreenViewModel = hiltViewModel()
             val state by vm.state.collectAsStateWithLifecycle()
 
-
             val conversationId = backStackEntry.arguments?.getString("conversationId", "").orEmpty()
-            LaunchedEffect(key1 = conversationId, block = {
-                vm(conversationId)
-            })
+            LaunchedEffect(key1 = conversationId, block = { vm(conversationId) })
 
             ConversationScreen(
                 state = state,
@@ -212,16 +209,18 @@ fun FlexChatNavigation(
                             navController.navigateUp()
                         }
 
-                        ConversationScreenUiEvent.OnAttachmentClick -> {
+                        // TODO: Implement voice and or video chat
 
+                        ConversationScreenUiEvent.OnAttachmentClick -> {
+                            // TODO: Implement add blob to the chat
                         }
 
                         ConversationScreenUiEvent.OnCameraClick -> {
-
+                            // TODO: Implement add image to the chat
                         }
 
                         ConversationScreenUiEvent.OnEmojiClick -> {
-
+                            // TODO: Implement emoji to the chat
                         }
                     }
                 }
