@@ -1,7 +1,6 @@
 {
   "projects": {
-    "default": "flex-chat-d996e",
-    "flexchat": "flex-chat-d996e"
+    "default": "flex-chat-d996e"
   },
   "targets": {},
   "etags": {}

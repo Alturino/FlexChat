@@ -8,4 +8,4 @@ export default interface MessageResponse {
   senderPhotoUrl: string;
   createdAt: Date;
   deletedAt: Date;
-}
+};

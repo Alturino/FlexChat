@@ -3,18 +3,16 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /conversations/{conversationId} {
-      allow create, read, update, delete: if request.auth != null;
+      allow create, read, update, delete;
     }
     match /conversation_members/{conversationMemberId} {
-      allow create, read, update, delete: if request.auth != null;
+      allow create, read, update, delete;
     }
     match /messages/{messageId} {
-      allow create, read, update, delete: if request.auth != null;
+      allow create, read, update, delete;
     }
     match /users/{userId} {
-      allow read: if request.auth != null;
-      allow update, delete: if request.auth != null && request.auth.uid == userId;
-      allow create: if request.auth != null;
+      allow create, read, update, delete;
     }
   }
 }

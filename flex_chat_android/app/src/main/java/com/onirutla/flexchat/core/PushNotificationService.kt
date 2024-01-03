@@ -9,13 +9,31 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import arrow.fx.coroutines.autoCloseable
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.onirutla.flexchat.R
+import com.onirutla.flexchat.domain.repository.ConversationRepository
+import com.onirutla.flexchat.domain.repository.UserRepository
 import com.onirutla.flexchat.ui.MainActivity
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import timber.log.Timber
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class PushNotificationService : FirebaseMessagingService() {
+
+    @Inject
+    lateinit var conversationRepository: ConversationRepository
+
+    @Inject
+    lateinit var userRepository: UserRepository
+
+    private val coroutineScope = CoroutineScope(SupervisorJob())
 
     companion object {
         private const val NOTIFICATION_ID = 1
@@ -36,7 +54,13 @@ class PushNotificationService : FirebaseMessagingService() {
 
         val title = message.notification?.title.orEmpty()
         val body = message.notification?.body.orEmpty()
-        sendNotification(title, body)
+        coroutineScope.launch {
+            userRepository.currentUser.collect {
+                if (it.id != message.data["userId"]) {
+                    sendNotification(title, body)
+                }
+            }
+        }
     }
 
     private fun sendNotification(title: String, notificationBody: String) {
@@ -73,5 +97,10 @@ class PushNotificationService : FirebaseMessagingService() {
             return
         }
         notificationManager.notify(NOTIFICATION_ID, notification)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        coroutineScope.cancel()
     }
 }

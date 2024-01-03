@@ -2,6 +2,7 @@ package com.onirutla.flexchat.ui.screens.main_screen
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import arrow.fx.coroutines.parMap
 import com.google.firebase.messaging.FirebaseMessaging
 import com.onirutla.flexchat.domain.repository.ConversationRepository
 import com.onirutla.flexchat.domain.repository.UserRepository
@@ -54,7 +55,12 @@ class MainScreenViewModel @Inject constructor(
                     .filterNot { it.isEmpty() }
                     .distinctUntilChanged { old, new -> old == new }
                     .collect { conversations ->
-                        conversations.forEach { firebaseMessaging.subscribeToTopic(it.id) }
+                        conversations.parMap { conversation ->
+                            firebaseMessaging.subscribeToTopic(conversation.id)
+                                .addOnFailureListener { Timber.e(it) }
+                                .addOnSuccessListener { Timber.d("Subscribed to topic: ${conversation.id}") }
+                                .addOnCompleteListener { Timber.d("Task d") }
+                        }
                     }
             }
         }
