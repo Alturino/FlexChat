@@ -25,30 +25,30 @@
 package com.onirutla.flexchat.ui.screens.conversation_screen
 
 import android.content.res.Configuration
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.VisibilityThreshold
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Send
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -56,19 +56,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import coil.compose.SubcomposeAsyncImage
 import com.onirutla.flexchat.domain.models.Conversation
 import com.onirutla.flexchat.domain.models.Message
+import com.onirutla.flexchat.domain.models.User
+import com.onirutla.flexchat.ui.components.ChatBubbleItem
+import com.onirutla.flexchat.ui.components.DraftMessageField
 import com.onirutla.flexchat.ui.theme.FlexChatTheme
-import com.onirutla.flexchat.ui.util.toLocalTimeString
 import java.time.LocalDateTime
 import java.time.ZoneId
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun ConversationScreen(
     modifier: Modifier = Modifier,
@@ -102,50 +102,48 @@ fun ConversationScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(contentPadding),
-            verticalArrangement = Arrangement.spacedBy(16.dp, alignment = Alignment.Bottom),
             horizontalAlignment = Alignment.CenterHorizontally,
             reverseLayout = true,
         ) {
             item {
-                OutlinedTextField(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.medium,
-                    value = state.draftMessage,
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Text,
-                        imeAction = ImeAction.Send
-                    ),
-                    keyboardActions = KeyboardActions(onSend = { onEvent(ConversationScreenEvent.OnDraftMessageSend) }),
-                    onValueChange = { onEvent(ConversationScreenEvent.OnDraftMessageChanged(it)) },
-                    trailingIcon = {
-                        IconButton(onClick = { onEvent(ConversationScreenEvent.OnDraftMessageSend) }) {
-                            Icon(imageVector = Icons.Rounded.Send, contentDescription = null)
-                        }
-                    }
-                )
-            }
-            items(items = state.messages) {
-                ListItem(
-                    leadingContent = {
-                        SubcomposeAsyncImage(
-                            modifier = Modifier
-                                .size(50.dp)
-                                .clip(CircleShape),
-                            model = it.senderPhotoUrl,
-                            contentDescription = null,
-                            loading = { CircularProgressIndicator(modifier = Modifier.size(50.dp)) },
-                            error = {
-                                Icon(
-                                    modifier = Modifier.size(50.dp),
-                                    imageVector = Icons.Rounded.Person,
-                                    contentDescription = null,
-                                )
-                            }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(IntrinsicSize.Max),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    DraftMessageField(
+                        modifier = Modifier.fillParentMaxWidth(fraction = 0.85f),
+                        message = state.draftMessage,
+                        onDraftMessageChanged = {
+                            onEvent(ConversationScreenEvent.OnDraftMessageChanged(it))
+                        },
+                        onDraftMessageSend = { onEvent(ConversationScreenEvent.OnDraftMessageSend) },
+                        onEmojiClick = { onUiEvent(ConversationScreenUiEvent.OnEmojiClick) },
+                        onAttachmentClick = { onUiEvent(ConversationScreenUiEvent.OnAttachmentClick) },
+                        onCameraClick = { onUiEvent(ConversationScreenUiEvent.OnCameraClick) },
+                    )
+                    IconButton(
+                        modifier = Modifier.clip(CircleShape),
+                        colors = IconButtonDefaults.filledIconButtonColors(),
+                        onClick = { onEvent(ConversationScreenEvent.OnDraftMessageSend) }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Send,
+                            contentDescription = null
                         )
-                    },
-                    headlineContent = { Text(text = it.senderName) },
-                    supportingContent = { Text(text = it.messageBody) },
-                    trailingContent = { Text(text = it.createdAt.toLocalTimeString()) }
+                    }
+                }
+            }
+            items(items = state.messages, key = { it.id }) {
+                ChatBubbleItem(
+                    modifier = Modifier.animateItemPlacement(
+                        animationSpec = spring(
+                            stiffness = Spring.StiffnessMedium,
+                            visibilityThreshold = IntOffset.VisibilityThreshold
+                        )
+                    ), message = it, isMySelf = it.userId == state.currentUser.id
                 )
             }
         }
@@ -167,6 +165,7 @@ private fun ConversationScreenPreview() {
     FlexChatTheme {
         ConversationScreen(
             state = ConversationScreenState(
+                currentUser = User(id = "conubia"),
                 conversation = Conversation(
                     id = "aeque",
                     conversationName = "Pesarkas Handal",
@@ -183,6 +182,17 @@ private fun ConversationScreenPreview() {
                         conversationId = "salutatus",
                         conversationMemberId = "rhoncus",
                         userId = "conubia",
+                        senderName = "Robbie Combs",
+                        senderPhotoUrl = "https://www.google.com/#q=solet",
+                        messageBody = "ius",
+                        createdAt = LocalDateTime.now(ZoneId.systemDefault()),
+                        deletedAt = LocalDateTime.now(ZoneId.systemDefault())
+                    ),
+                    Message(
+                        id = "asdfasdfasdf",
+                        conversationId = "salutatus",
+                        conversationMemberId = "rhoncus",
+                        userId = "test",
                         senderName = "Robbie Combs",
                         senderPhotoUrl = "https://www.google.com/#q=solet",
                         messageBody = "ius",

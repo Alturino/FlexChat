@@ -26,4 +26,7 @@ package com.onirutla.flexchat.ui.screens.conversation_screen
 
 sealed interface ConversationScreenUiEvent {
     data object OnNavigateUp : ConversationScreenUiEvent
+    data object OnAttachmentClick: ConversationScreenUiEvent
+    data object OnCameraClick: ConversationScreenUiEvent
+    data object OnEmojiClick: ConversationScreenUiEvent
 }

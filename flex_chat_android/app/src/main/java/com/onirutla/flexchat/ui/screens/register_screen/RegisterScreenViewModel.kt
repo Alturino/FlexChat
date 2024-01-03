@@ -24,8 +24,11 @@
 
 package com.onirutla.flexchat.ui.screens.register_screen
 
+import android.content.Intent
+import android.content.IntentSender
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import arrow.core.Either
 import com.onirutla.flexchat.core.util.isValidEmail
 import com.onirutla.flexchat.domain.models.RegisterWithUsernameEmailAndPassword
 import com.onirutla.flexchat.domain.repository.UserRepository
@@ -145,6 +148,34 @@ class RegisterScreenViewModel @Inject constructor(
             }
         }
     }
+
+
+    fun registerWithGoogle(intent: Intent) {
+        viewModelScope.launch {
+            userRepository.loginWithGoogle(intent)
+                .onLeft { exception ->
+                    Timber.e("registerFailed with exception: $exception")
+                    _state.update {
+                        it.copy(
+                            isRegisterWithGoogleSuccessful = false,
+                            registerWithGoogleErrorMessage = exception.localizedMessage.orEmpty()
+                        )
+                    }
+                }
+                .onRight { user ->
+                    Timber.d("loginSuccessful: $user")
+                    _state.update {
+                        it.copy(
+                            isRegisterWithGoogleSuccessful = true,
+                            registerWithGoogleErrorMessage = ""
+                        )
+                    }
+                }
+        }
+    }
+
+    suspend fun getSignInIntentSender(): Either<Exception, IntentSender> =
+        userRepository.getSignInIntentSender()
 
     fun onEvent(event: RegisterScreenEvent) {
         when (event) {

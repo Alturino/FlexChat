@@ -26,9 +26,14 @@ package com.onirutla.flexchat.ui.screens
 
 sealed class Screens(val route: String) {
     data object MainScreen : Screens("/")
-    data object LoginScreen : Screens("/users/login")
-    data object RegisterScreen : Screens("/users/register")
     data object AddNewConversationScreen : Screens("/conversation")
     data object ConversationScreen : Screens("/conversation")
     data object ProfileScreen : Screens("/users")
+
+    sealed class Auth(val route: String) {
+        data object Default : Auth("/auth")
+        data object LoginScreen : Auth("/auth/login")
+        data object RegisterScreen : Auth("/auth/register")
+        data object ForgotPassword : Auth("/auth/forgot")
+    }
 }

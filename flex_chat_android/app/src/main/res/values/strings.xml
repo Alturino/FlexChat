@@ -16,4 +16,5 @@
     <string name="name">Name</string>
     <string name="about">About</string>
     <string name="select_available_users">Select available users</string>
+    <string name="message">Message</string>
 </resources>

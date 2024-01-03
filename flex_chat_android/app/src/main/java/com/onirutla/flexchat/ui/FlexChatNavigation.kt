@@ -25,14 +25,11 @@
 package com.onirutla.flexchat.ui
 
 import android.Manifest
-import android.app.Activity.RESULT_OK
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -47,22 +44,16 @@ import com.onirutla.flexchat.ui.screens.SharedViewModel
 import com.onirutla.flexchat.ui.screens.add_new_conversation_screen.AddNewConversationScreen
 import com.onirutla.flexchat.ui.screens.add_new_conversation_screen.AddNewConversationScreenUiEvent
 import com.onirutla.flexchat.ui.screens.add_new_conversation_screen.AddNewConversationScreenViewModel
+import com.onirutla.flexchat.ui.screens.authNavGraph
 import com.onirutla.flexchat.ui.screens.conversation_screen.ConversationScreen
 import com.onirutla.flexchat.ui.screens.conversation_screen.ConversationScreenUiEvent
 import com.onirutla.flexchat.ui.screens.conversation_screen.ConversationScreenViewModel
-import com.onirutla.flexchat.ui.screens.login_screen.LoginScreen
-import com.onirutla.flexchat.ui.screens.login_screen.LoginScreenUiEvent
-import com.onirutla.flexchat.ui.screens.login_screen.LoginScreenViewModel
 import com.onirutla.flexchat.ui.screens.main_screen.MainScreen
 import com.onirutla.flexchat.ui.screens.main_screen.MainScreenUiEvent
 import com.onirutla.flexchat.ui.screens.main_screen.MainScreenViewModel
 import com.onirutla.flexchat.ui.screens.profile_screen.ProfileScreen
 import com.onirutla.flexchat.ui.screens.profile_screen.ProfileScreenUiEvent
 import com.onirutla.flexchat.ui.screens.profile_screen.ProfileScreenViewModel
-import com.onirutla.flexchat.ui.screens.register_screen.RegisterScreen
-import com.onirutla.flexchat.ui.screens.register_screen.RegisterScreenUiEvent
-import com.onirutla.flexchat.ui.screens.register_screen.RegisterScreenViewModel
-import kotlinx.coroutines.launch
 import timber.log.Timber
 
 @Composable
@@ -75,7 +66,7 @@ fun FlexChatNavigation(
 
     LaunchedEffect(key1 = isLoggedIn, block = {
         if (isLoggedIn == false) {
-            navController.navigate(route = Screens.LoginScreen.route) {
+            navController.navigate(route = Screens.Auth.Default.route) {
                 launchSingleTop = true
                 popUpTo(route = Screens.MainScreen.route) {
                     inclusive = true
@@ -84,30 +75,29 @@ fun FlexChatNavigation(
         }
     })
 
-
     NavHost(
         modifier = modifier,
         navController = navController,
         startDestination = Screens.MainScreen.route
     ) {
+        authNavGraph(navController)
         composable(
             route = Screens.MainScreen.route,
             arguments = listOf(),
             deepLinks = listOf()
-        ) { backStackEntry ->
+        ) {
             val vm: MainScreenViewModel = hiltViewModel()
             val state by vm.state.collectAsStateWithLifecycle()
 
             val requestNotificationPermissionLauncher = rememberLauncherForActivityResult(
-                contract = ActivityResultContracts.RequestPermission(),
-                onResult = { isGranted ->
-                    if (isGranted) {
-                        Timber.d("Notification permission isGranted: $isGranted")
-                    } else {
-                        Timber.e("Notification permission isNotGranted: ${!isGranted}")
-                    }
+                contract = ActivityResultContracts.RequestPermission()
+            ) { isGranted ->
+                if (isGranted) {
+                    Timber.d("Notification permission isGranted: $isGranted")
+                } else {
+                    Timber.e("Notification permission isNotGranted: ${!isGranted}")
                 }
-            )
+            }
 
             LaunchedEffect(key1 = Unit, block = {
                 requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
@@ -128,106 +118,6 @@ fun FlexChatNavigation(
 
                         MainScreenUiEvent.OnProfileIconClick -> {
                             navController.navigate(Screens.ProfileScreen.route)
-                        }
-                    }
-                }
-            )
-        }
-        composable(
-            route = Screens.LoginScreen.route,
-            arguments = listOf(),
-            deepLinks = listOf()
-        ) {
-            val vm: LoginScreenViewModel = hiltViewModel()
-            val state by vm.state.collectAsStateWithLifecycle()
-
-            val coroutineScope = rememberCoroutineScope()
-
-            val signInLauncher = rememberLauncherForActivityResult(
-                contract = ActivityResultContracts.StartIntentSenderForResult(),
-                onResult = {
-                    if (it.resultCode == RESULT_OK) {
-                        vm.loginWithGoogle(it.data ?: return@rememberLauncherForActivityResult)
-                    } else {
-                        Timber.e("Login failed with resultCode: ${it.resultCode}")
-                    }
-                }
-            )
-
-            LoginScreen(
-                state = state,
-                onEvent = vm::onEvent,
-                onUiEvent = {
-                    when (it) {
-                        LoginScreenUiEvent.OnDontHaveAccountClick -> {
-                            navController.navigate(route = Screens.RegisterScreen.route) {
-                                launchSingleTop = true
-                                popUpTo(route = Screens.LoginScreen.route) {
-                                    inclusive = true
-                                }
-                            }
-                        }
-
-                        LoginScreenUiEvent.OnForgotPasswordClick -> {
-
-                        }
-
-                        LoginScreenUiEvent.OnLoginWithGoogleClick -> {
-                            coroutineScope.launch {
-                                val intentSender = vm.getSignInIntentSender()
-                                if (intentSender.isRight()) {
-                                    val intentSenderRequest =
-                                        IntentSenderRequest.Builder(intentSender.getOrNull()!!)
-                                            .build()
-                                    signInLauncher.launch(intentSenderRequest)
-                                }
-                            }
-                        }
-
-                        LoginScreenUiEvent.NavigateToMainScreen -> {
-                            navController.navigate(route = Screens.MainScreen.route) {
-                                launchSingleTop = true
-                                popUpTo(route = Screens.LoginScreen.route) {
-                                    inclusive = true
-                                }
-                            }
-                        }
-                    }
-                }
-            )
-        }
-        composable(
-            route = Screens.RegisterScreen.route,
-            arguments = listOf(),
-            deepLinks = listOf()
-        ) {
-            val vm: RegisterScreenViewModel = hiltViewModel()
-            val state by vm.state.collectAsStateWithLifecycle()
-            RegisterScreen(
-                state = state,
-                onEvent = vm::onEvent,
-                onUiEvent = {
-                    when (it) {
-                        RegisterScreenUiEvent.OnHaveAnAccountClick -> {
-                            navController.navigate(route = Screens.LoginScreen.route) {
-                                launchSingleTop = true
-                                popUpTo(route = Screens.RegisterScreen.route) {
-                                    inclusive = true
-                                }
-                            }
-                        }
-
-                        RegisterScreenUiEvent.OnRegisterWithGoogleClick -> {
-
-                        }
-
-                        RegisterScreenUiEvent.NavigateToMainScreen -> {
-                            navController.navigate(route = Screens.MainScreen.route) {
-                                launchSingleTop = true
-                                popUpTo(route = Screens.RegisterScreen.route) {
-                                    inclusive = true
-                                }
-                            }
                         }
                     }
                 }
@@ -320,6 +210,18 @@ fun FlexChatNavigation(
                     when (it) {
                         ConversationScreenUiEvent.OnNavigateUp -> {
                             navController.navigateUp()
+                        }
+
+                        ConversationScreenUiEvent.OnAttachmentClick -> {
+
+                        }
+
+                        ConversationScreenUiEvent.OnCameraClick -> {
+
+                        }
+
+                        ConversationScreenUiEvent.OnEmojiClick -> {
+
                         }
                     }
                 }
