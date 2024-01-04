@@ -9,6 +9,10 @@ plugins {
     alias(libs.plugins.firebasePerformanceMonitoring)
 }
 
+hilt {
+    enableAggregatingTask = true
+}
+
 android {
     namespace = "com.onirutla.flexchat"
     compileSdk = 34
@@ -24,6 +28,13 @@ android {
         multiDexEnabled = true
         vectorDrawables {
             useSupportLibrary = true
+        }
+    }
+
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+            isReturnDefaultValues = true
         }
     }
 
@@ -60,6 +71,7 @@ android {
 
 dependencies {
 
+    implementation(libs.androidx.multidex)
     implementation(libs.core.ktx)
     implementation(libs.lifecycle.runtime.ktx)
     implementation(libs.activity.compose)
@@ -129,6 +141,16 @@ dependencies {
     implementation(libs.coil.svg)
     implementation(libs.coil.video)
 
+    // Camera
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.core)
+    implementation(libs.androidx.camera.extensions)
+    implementation(libs.androidx.camera.video)
+    implementation(libs.androidx.camera.view)
+
+    // Accompanist
+    implementation(libs.accompanist.permissions)
+
     // Timber
     implementation(libs.timber)
 
@@ -137,6 +159,9 @@ dependencies {
 
     // Google Play Service
     implementation(libs.play.services.auth)
+
+    // Robolectric
+    testImplementation(libs.robolectric)
 
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 }

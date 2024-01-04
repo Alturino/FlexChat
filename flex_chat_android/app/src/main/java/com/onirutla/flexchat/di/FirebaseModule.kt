@@ -34,6 +34,7 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.functions.FirebaseFunctions
 import com.google.firebase.messaging.FirebaseMessaging
+import com.google.firebase.storage.FirebaseStorage
 import com.onirutla.flexchat.BuildConfig
 import dagger.Module
 import dagger.Provides
@@ -106,6 +107,17 @@ object FirebaseModule {
             }
         }
         return FirebaseFunctions.getInstance(firebaseApp)
+    }
+
+    @Provides
+    @Singleton
+    fun provideFirebaseStorage(firebaseApp: FirebaseApp): FirebaseStorage {
+        if (BuildConfig.DEBUG) {
+            return FirebaseStorage.getInstance(firebaseApp).apply {
+                useEmulator("10.0.2.2", 9199)
+            }
+        }
+        return FirebaseStorage.getInstance(firebaseApp)
     }
 
 }

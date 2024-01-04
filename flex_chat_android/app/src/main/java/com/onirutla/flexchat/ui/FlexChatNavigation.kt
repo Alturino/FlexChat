@@ -25,8 +25,6 @@
 package com.onirutla.flexchat.ui
 
 import android.Manifest
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -39,12 +37,16 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
 import com.onirutla.flexchat.ui.screens.Screens
 import com.onirutla.flexchat.ui.screens.SharedViewModel
 import com.onirutla.flexchat.ui.screens.add_new_conversation_screen.AddNewConversationScreen
 import com.onirutla.flexchat.ui.screens.add_new_conversation_screen.AddNewConversationScreenUiEvent
 import com.onirutla.flexchat.ui.screens.add_new_conversation_screen.AddNewConversationScreenViewModel
 import com.onirutla.flexchat.ui.screens.authNavGraph
+import com.onirutla.flexchat.ui.screens.camera_screen.CameraScreen
 import com.onirutla.flexchat.ui.screens.conversation_screen.ConversationScreen
 import com.onirutla.flexchat.ui.screens.conversation_screen.ConversationScreenUiEvent
 import com.onirutla.flexchat.ui.screens.conversation_screen.ConversationScreenViewModel
@@ -54,8 +56,8 @@ import com.onirutla.flexchat.ui.screens.main_screen.MainScreenViewModel
 import com.onirutla.flexchat.ui.screens.profile_screen.ProfileScreen
 import com.onirutla.flexchat.ui.screens.profile_screen.ProfileScreenUiEvent
 import com.onirutla.flexchat.ui.screens.profile_screen.ProfileScreenViewModel
-import timber.log.Timber
 
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun FlexChatNavigation(
     modifier: Modifier = Modifier,
@@ -89,20 +91,11 @@ fun FlexChatNavigation(
             val vm: MainScreenViewModel = hiltViewModel()
             val state by vm.state.collectAsStateWithLifecycle()
 
-            val requestNotificationPermissionLauncher = rememberLauncherForActivityResult(
-                contract = ActivityResultContracts.RequestPermission()
-            ) { isGranted ->
-                if (isGranted) {
-                    Timber.d("Notification permission isGranted: $isGranted")
-                } else {
-                    Timber.e("Notification permission isNotGranted: ${!isGranted}")
-                }
+            val notificationPermissionState =
+                rememberPermissionState(permission = Manifest.permission.POST_NOTIFICATIONS)
+            if (!notificationPermissionState.status.isGranted) {
+                notificationPermissionState.launchPermissionRequest()
             }
-
-            LaunchedEffect(key1 = Unit, block = {
-                requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                return@LaunchedEffect
-            })
 
             MainScreen(
                 state = state,
@@ -200,6 +193,15 @@ fun FlexChatNavigation(
             val conversationId = backStackEntry.arguments?.getString("conversationId", "").orEmpty()
             LaunchedEffect(key1 = conversationId, block = { vm(conversationId) })
 
+            val cameraPermissionState = rememberPermissionState(
+                permission = Manifest.permission.CAMERA,
+                onPermissionResult = {
+                    if (it) {
+                        navController.navigate(route = Screens.CameraScreen.route)
+                    }
+                }
+            )
+
             ConversationScreen(
                 state = state,
                 onEvent = vm::onEvent,
@@ -216,7 +218,11 @@ fun FlexChatNavigation(
                         }
 
                         ConversationScreenUiEvent.OnCameraClick -> {
-                            // TODO: Implement add image to the chat
+                            if (!cameraPermissionState.status.isGranted) {
+                                cameraPermissionState.launchPermissionRequest()
+                            } else {
+                                navController.navigate(route = Screens.CameraScreen.route)
+                            }
                         }
 
                         ConversationScreenUiEvent.OnEmojiClick -> {
@@ -225,6 +231,9 @@ fun FlexChatNavigation(
                     }
                 }
             )
+        }
+        composable(route = Screens.CameraScreen.route) {
+            CameraScreen(onNavigateUp = { navController.navigateUp() })
         }
     }
 }

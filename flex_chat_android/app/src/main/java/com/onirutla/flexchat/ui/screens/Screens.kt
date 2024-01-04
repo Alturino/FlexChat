@@ -28,6 +28,7 @@ sealed class Screens(val route: String) {
     data object MainScreen : Screens("/")
     data object AddNewConversationScreen : Screens("/conversation")
     data object ConversationScreen : Screens("/conversation")
+    data object CameraScreen : Screens("/conversation/camera")
     data object ProfileScreen : Screens("/users")
 
     sealed class Auth(val route: String) {

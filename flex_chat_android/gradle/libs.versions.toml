@@ -1,8 +1,13 @@
 [versions]
+accompanist-permissions = "0.32.0"
 activity-compose = "1.8.2"
 agp = "8.2.0"
 androidx-test-ext-junit = "1.1.5"
 arrow = "1.2.1"
+camera-core = "1.3.1"
+camera-extensions = "1.3.1"
+camera-video = "1.3.1"
+camera-view = "1.3.1"
 coil = "2.5.0"
 com-google-devtools-ksp = "1.9.20-1.0.13"
 compose-bom = "2023.10.01"
@@ -17,18 +22,27 @@ kotlin = "1.9.20"
 kotlinx-datetime = "0.5.0"
 lifecycle-runtime-ktx = "2.6.2"
 material = "1.5.4"
+multidex = "2.0.1"
 nav_version = "2.7.6"
 play-services-auth = "20.7.0"
+robolectric = "4.11.1"
 timber = "5.0.1"
 
 [libraries]
+accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanist-permissions" }
 activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activity-compose" }
+androidx-camera-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "camera-extensions" }
+androidx-camera-core = { module = "androidx.camera:camera-core", version.ref = "camera-core" }
+androidx-camera-extensions = { module = "androidx.camera:camera-extensions", version.ref = "camera-extensions" }
+androidx-camera-video = { module = "androidx.camera:camera-video", version.ref = "camera-video" }
+androidx-camera-view = { module = "androidx.camera:camera-view", version.ref = "camera-view" }
 androidx-hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "hilt-navigation-compose" }
 androidx-lifecycle-common = { module = "androidx.lifecycle:lifecycle-common", version.ref = "lifecycle-runtime-ktx" }
 androidx-lifecycle-livedata-ktx = { module = "androidx.lifecycle:lifecycle-livedata-ktx", version.ref = "lifecycle-runtime-ktx" }
 androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle-runtime-ktx" }
 androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle-runtime-ktx" }
 androidx-material-icons-extended = { module = "androidx.compose.material:material-icons-extended", version.ref = "material" }
+androidx-multidex = { module = "androidx.multidex:multidex", version.ref = "multidex" }
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "nav_version" }
 androidx-navigation-fragment-ktx = { module = "androidx.navigation:navigation-fragment-ktx", version.ref = "nav_version" }
 androidx-navigation-runtime-ktx = { module = "androidx.navigation:navigation-runtime-ktx", version.ref = "nav_version" }
@@ -68,6 +82,7 @@ kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.
 lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle-runtime-ktx" }
 material3 = { group = "androidx.compose.material3", name = "material3" }
 play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "play-services-auth" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
 ui = { group = "androidx.compose.ui", name = "ui" }
 ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
