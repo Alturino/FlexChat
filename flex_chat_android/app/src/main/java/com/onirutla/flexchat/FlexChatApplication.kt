@@ -24,12 +24,22 @@
 
 package com.onirutla.flexchat
 
+import android.util.Log
+import androidx.camera.camera2.Camera2Config
+import androidx.camera.core.CameraXConfig
+import androidx.core.content.ContextCompat
 import androidx.multidex.MultiDexApplication
+import coil.ImageLoader
+import coil.ImageLoaderFactory
 import dagger.hilt.android.HiltAndroidApp
 import timber.log.Timber
+import javax.inject.Inject
 
 @HiltAndroidApp
-class FlexChatApplication : MultiDexApplication() {
+class FlexChatApplication : MultiDexApplication(), ImageLoaderFactory, CameraXConfig.Provider {
+
+    @Inject
+    lateinit var coilImageLoader: ImageLoader
 
     override fun onCreate() {
         super.onCreate()
@@ -37,4 +47,11 @@ class FlexChatApplication : MultiDexApplication() {
             Timber.plant(Timber.DebugTree())
         }
     }
+
+    override fun newImageLoader(): ImageLoader = coilImageLoader
+
+    override fun getCameraXConfig(): CameraXConfig = CameraXConfig.Builder.fromConfig(Camera2Config.defaultConfig())
+        .setCameraExecutor(ContextCompat.getMainExecutor(this))
+        .setMinimumLoggingLevel(Log.DEBUG)
+        .build()
 }

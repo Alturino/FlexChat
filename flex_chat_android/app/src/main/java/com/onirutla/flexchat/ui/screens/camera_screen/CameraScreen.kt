@@ -1,17 +1,24 @@
 package com.onirutla.flexchat.ui.screens.camera_screen
 
+import android.content.ContentValues
+import android.content.Context
 import android.net.Uri
 import android.os.Environment
-import android.view.ViewGroup.LayoutParams
-import android.webkit.MimeTypeMap
+import android.provider.MediaStore
 import androidx.activity.compose.BackHandler
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageCapture.FLASH_MODE_AUTO
+import androidx.camera.core.ImageCapture.FLASH_MODE_OFF
+import androidx.camera.core.ImageCapture.FLASH_MODE_ON
+import androidx.camera.core.ImageCapture.OnImageSavedCallback
+import androidx.camera.core.ImageCapture.OutputFileOptions
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,154 +28,221 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Camera
+import androidx.compose.material.icons.rounded.FlashAuto
+import androidx.compose.material.icons.rounded.FlashOff
+import androidx.compose.material.icons.rounded.FlashOn
 import androidx.compose.material.icons.rounded.FlipCameraAndroid
 import androidx.compose.material.icons.rounded.Photo
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.net.toFile
+import androidx.core.content.ContextCompat
 import com.onirutla.flexchat.R
-import com.onirutla.flexchat.ui.theme.FlexChatTheme
-import com.onirutla.flexchat.ui.util.Constants.FILE_PHOTO_EXTENSION
+import com.onirutla.flexchat.ui.components.CameraIconButton
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import timber.log.Timber
 import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.concurrent.Executors
+import kotlin.coroutines.resumeWithException
 
 @Composable
 fun CameraScreen(modifier: Modifier = Modifier, onNavigateUp: () -> Unit) {
 
-    val context = LocalContext.current
-    val appContext = context.applicationContext
-    val lifecycleOwner = LocalLifecycleOwner.current
-    val cameraController = remember { LifecycleCameraController(context) }
-    val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
+    val coroutineScope = rememberCoroutineScope()
 
-    cameraController.bindToLifecycle(lifecycleOwner)
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    var cameraSelector by remember { mutableStateOf(CameraSelector.DEFAULT_BACK_CAMERA) }
+    var flashMode by remember { mutableIntStateOf(FLASH_MODE_ON) }
+
+    val cameraController = remember {
+        LifecycleCameraController(context).apply {
+            bindToLifecycle(lifecycleOwner)
+            this.cameraSelector = cameraSelector
+        }
+    }
 
     BackHandler {
         onNavigateUp()
     }
 
     Scaffold(modifier = modifier.fillMaxSize()) { contentPadding ->
-        Box(modifier = modifier.fillMaxSize()) {
-            AndroidView(
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(contentPadding),
+            verticalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(350.dp)
-                    .align(Alignment.Center)
-                    .padding(contentPadding),
-                factory = { context ->
-                    PreviewView(context).apply {
-                        layoutParams = LayoutParams(
-                            LayoutParams.MATCH_PARENT,
-                            LayoutParams.MATCH_PARENT
-                        )
-                        scaleType = PreviewView.ScaleType.FILL_CENTER
-                        controller = cameraController
-                        implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+                    .height(IntrinsicSize.Max),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                when (flashMode) {
+                    FLASH_MODE_OFF -> {
+                        CameraIconButton(
+                            onClick = {
+                                flashMode = FLASH_MODE_ON
+                                cameraController.imageCaptureFlashMode = flashMode
+                            }
+                        ) {
+                            Icon(imageVector = Icons.Rounded.FlashOff, contentDescription = null)
+                        }
                     }
-                },
-                update = {
 
+                    FLASH_MODE_ON -> {
+                        CameraIconButton(
+                            onClick = {
+                                flashMode = FLASH_MODE_AUTO
+                                cameraController.imageCaptureFlashMode = flashMode
+                            }
+                        ) {
+                            Icon(imageVector = Icons.Rounded.FlashOn, contentDescription = null)
+                        }
+                    }
+
+                    FLASH_MODE_AUTO -> {
+                        CameraIconButton(
+                            onClick = {
+                                flashMode = FLASH_MODE_OFF
+                                cameraController.imageCaptureFlashMode = flashMode
+                            }
+                        ) {
+                            Icon(imageVector = Icons.Rounded.FlashAuto, contentDescription = null)
+                        }
+                    }
                 }
+            }
+            CameraPreview(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(350.dp),
+                cameraController = cameraController
             )
             Row(
                 modifier = Modifier
-                    .padding(start = 16.dp, end = 16.dp, bottom = 32.dp)
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Max),
+                horizontalArrangement = Arrangement.SpaceAround,
             ) {
-                val outputDir = File(
-                    appContext.getExternalFilesDir(Environment.DIRECTORY_PICTURES),
-                    stringResource(id = R.string.app_name)
-                ).apply { mkdirs() }
-
-                val localDateTime = LocalDateTime.now()
-                val filenameFormat = DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(localDateTime)
-                val photoFile = File(
-                    outputDir,
-                    "$filenameFormat$FILE_PHOTO_EXTENSION"
-                )
-
-                val outputFileOptions = ImageCapture.OutputFileOptions
-                    .Builder(photoFile)
-                    .setMetadata(ImageCapture.Metadata())
-                    .build()
-
-                IconButton(
+                CameraIconButton(onClick = { /*TODO*/ }) {
+                    Icon(imageVector = Icons.Rounded.Photo, contentDescription = null)
+                }
+                CameraIconButton(
                     modifier = Modifier.wrapContentSize(),
                     onClick = {
-                        cameraController.takePicture(
-                            outputFileOptions,
-                            cameraExecutor,
-                            object : ImageCapture.OnImageSavedCallback {
-                                override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                                    Timber.d("Image captured with uri: ${outputFileResults.savedUri}")
-                                    val savedUri =
-                                        outputFileResults.savedUri ?: Uri.fromFile(photoFile)
-
-                                    // TODO: Implement saving picture to gallery ref: https://github.com/IOH-C22-HY-4/MobileDevelopment/blob/main/app/src/main/java/com/ioh_c22_h2_4/hy_ponics/CameraFragment.kt
-                                    val mimeType = MimeTypeMap.getSingleton()
-                                        .getMimeTypeFromExtension(savedUri.toFile().extension)
-
-                                }
-
-                                override fun onError(exception: ImageCaptureException) {
-                                    TODO("Not yet implemented")
-                                }
-
-                            }
-                        )
+                        coroutineScope.launch {
+                            context.takePhoto(cameraController = cameraController)
+                        }
                     }
                 ) {
-                    Icon(
-                        modifier = Modifier.size(24.dp),
-                        imageVector = Icons.Rounded.Photo,
-                        contentDescription = null
-                    )
-                }
-                IconButton(modifier = Modifier.wrapContentSize(), onClick = { /*TODO*/ }) {
                     Icon(
                         modifier = Modifier.size(64.dp),
                         imageVector = Icons.Rounded.Camera,
                         contentDescription = null
                     )
                 }
-                IconButton(modifier = Modifier.wrapContentSize(), onClick = {
-                    if (cameraController.cameraSelector == CameraSelector.DEFAULT_BACK_CAMERA) {
-                        cameraController.cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
-                    } else if (cameraController.cameraSelector == CameraSelector.DEFAULT_FRONT_CAMERA) {
-                        cameraController.cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+                CameraIconButton(
+                    modifier = Modifier.wrapContentSize(),
+                    onClick = {
+                        cameraSelector =
+                            if (cameraSelector == CameraSelector.DEFAULT_FRONT_CAMERA) {
+                                CameraSelector.DEFAULT_BACK_CAMERA
+                            } else {
+                                CameraSelector.DEFAULT_FRONT_CAMERA
+                            }
+                        cameraController.cameraSelector = cameraSelector
                     }
-                }) {
-                    Icon(
-                        modifier = Modifier.size(24.dp),
-                        imageVector = Icons.Rounded.FlipCameraAndroid,
-                        contentDescription = null
-                    )
+                ) {
+                    Icon(imageVector = Icons.Rounded.FlipCameraAndroid, contentDescription = null)
                 }
             }
         }
     }
 }
 
-@Preview
 @Composable
-private fun CameraScreenPreview() {
-    FlexChatTheme {
-        CameraScreen(onNavigateUp = {})
+fun CameraPreview(
+    modifier: Modifier = Modifier,
+    cameraController: LifecycleCameraController,
+) {
+    AndroidView(
+        modifier = modifier,
+        factory = {
+            val previewView = PreviewView(it).apply {
+                scaleType = PreviewView.ScaleType.FILL_CENTER
+                implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+                controller = cameraController
+            }
+            previewView
+        },
+    )
+}
+
+private suspend fun Context.takePhoto(
+    cameraController: LifecycleCameraController,
+): Uri = suspendCancellableCoroutine { continuation ->
+
+    val dateAdded = LocalDateTime.now()
+    val dateFormat = DateTimeFormatter.ISO_DATE.format(dateAdded)
+    val fileNameFormat = DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(dateAdded)
+    val photoExtension = ".jpg"
+
+    val metadata = ImageCapture.Metadata()
+    val contentValues = ContentValues().apply {
+        put(MediaStore.Images.Media.DATE_ADDED, dateFormat)
+        put(MediaStore.Images.Media.DATE_MODIFIED, dateFormat)
+        put(MediaStore.Images.Media.DATE_TAKEN, dateFormat)
+        put(MediaStore.Images.Media.DISPLAY_NAME, "$fileNameFormat$photoExtension")
+        put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+        put(
+            MediaStore.Images.Media.RELATIVE_PATH,
+            Environment.DIRECTORY_PICTURES + File.separator + getString(R.string.app_name)
+        )
+        put(MediaStore.Images.Media.TITLE, "$fileNameFormat$photoExtension")
+        put(MediaStore.Images.Media.YEAR, dateAdded.year)
     }
+
+    val outputFileOptions = OutputFileOptions.Builder(
+        contentResolver,
+        MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+        contentValues
+    ).setMetadata(metadata)
+        .build()
+
+    cameraController.takePicture(
+        outputFileOptions,
+        ContextCompat.getMainExecutor(this),
+        object : OnImageSavedCallback {
+            override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
+                val savedUri = outputFileResults.savedUri
+                Timber.d("Success to save image with Uri: $savedUri")
+                if (savedUri != null) {
+                    continuation.resumeWith(Result.success(savedUri))
+                } else {
+                    continuation.resumeWithException(NullPointerException("Saved uri is null"))
+                }
+            }
+
+            override fun onError(exception: ImageCaptureException) {
+                Timber.d("Failed to save image with exception: $exception")
+                continuation.resumeWithException(exception)
+            }
+        }
+    )
 }

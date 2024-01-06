@@ -147,6 +147,7 @@ dependencies {
     implementation(libs.androidx.camera.extensions)
     implementation(libs.androidx.camera.video)
     implementation(libs.androidx.camera.view)
+    implementation(libs.androidx.camera.lifecycle)
 
     // Accompanist
     implementation(libs.accompanist.permissions)
