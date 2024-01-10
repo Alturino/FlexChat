@@ -25,10 +25,12 @@
 package com.onirutla.flexchat.ui
 
 import android.Manifest
+import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
@@ -40,6 +42,7 @@ import androidx.navigation.navArgument
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
+import com.onirutla.flexchat.ui.screens.confirmation_send_photo_screen.ConfirmationSendPhotoScreen
 import com.onirutla.flexchat.ui.screens.Screens
 import com.onirutla.flexchat.ui.screens.SharedViewModel
 import com.onirutla.flexchat.ui.screens.add_new_conversation_screen.AddNewConversationScreen
@@ -233,7 +236,28 @@ fun FlexChatNavigation(
             )
         }
         composable(route = Screens.CameraScreen.route) {
-            CameraScreen(onNavigateUp = { navController.navigateUp() })
+            CameraScreen(
+                onNavigateUp = { navController.navigateUp() },
+                onNavigateToEditPhotoScreen = {
+                    navController.navigate(route = "${Screens.EditPhotoScreen.route}/${Uri.encode(it.toString())}")
+                },
+            )
+        }
+        composable(
+            route = "${Screens.EditPhotoScreen.route}/{photoUri}",
+            arguments = listOf(
+                navArgument(name = "photoUri", builder = {
+                    type = NavType.StringType
+                    defaultValue = ""
+                    nullable = false
+                })
+            ),
+            deepLinks = listOf()
+        ) { backStackEntry ->
+            val arg = backStackEntry.arguments?.getString("photoUri", "").orEmpty()
+            val decodedUri = Uri.decode(arg)
+            val photoUri = decodedUri.toUri()
+            ConfirmationSendPhotoScreen(photoUri = photoUri)
         }
     }
 }

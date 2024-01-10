@@ -29,4 +29,5 @@ object FirebaseCollections {
     const val CONVERSATION_MEMBERS = "conversation_members"
     const val USERS = "users"
     const val MESSAGES = "messages"
+    const val ATTACHMENTS = "attachments"
 }

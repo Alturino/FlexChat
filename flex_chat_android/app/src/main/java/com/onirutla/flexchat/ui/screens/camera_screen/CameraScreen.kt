@@ -6,6 +6,9 @@ import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCapture.FLASH_MODE_AUTO
@@ -49,7 +52,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import com.onirutla.flexchat.R
-import com.onirutla.flexchat.ui.components.CameraIconButton
+import com.onirutla.flexchat.ui.components.OnImageIconButton
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import timber.log.Timber
@@ -59,7 +62,11 @@ import java.time.format.DateTimeFormatter
 import kotlin.coroutines.resumeWithException
 
 @Composable
-fun CameraScreen(modifier: Modifier = Modifier, onNavigateUp: () -> Unit) {
+fun CameraScreen(
+    modifier: Modifier = Modifier,
+    onNavigateUp: () -> Unit,
+    onNavigateToEditPhotoScreen: (savedImage: Uri) -> Unit,
+) {
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -80,6 +87,13 @@ fun CameraScreen(modifier: Modifier = Modifier, onNavigateUp: () -> Unit) {
         onNavigateUp()
     }
 
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = PickVisualMedia(),
+        onResult = {
+            it?.let(onNavigateToEditPhotoScreen::invoke)
+        }
+    )
+
     Scaffold(modifier = modifier.fillMaxSize()) { contentPadding ->
         Column(
             modifier = Modifier
@@ -95,7 +109,7 @@ fun CameraScreen(modifier: Modifier = Modifier, onNavigateUp: () -> Unit) {
             ) {
                 when (flashMode) {
                     FLASH_MODE_OFF -> {
-                        CameraIconButton(
+                        OnImageIconButton(
                             onClick = {
                                 flashMode = FLASH_MODE_ON
                                 cameraController.imageCaptureFlashMode = flashMode
@@ -106,7 +120,7 @@ fun CameraScreen(modifier: Modifier = Modifier, onNavigateUp: () -> Unit) {
                     }
 
                     FLASH_MODE_ON -> {
-                        CameraIconButton(
+                        OnImageIconButton(
                             onClick = {
                                 flashMode = FLASH_MODE_AUTO
                                 cameraController.imageCaptureFlashMode = flashMode
@@ -117,7 +131,7 @@ fun CameraScreen(modifier: Modifier = Modifier, onNavigateUp: () -> Unit) {
                     }
 
                     FLASH_MODE_AUTO -> {
-                        CameraIconButton(
+                        OnImageIconButton(
                             onClick = {
                                 flashMode = FLASH_MODE_OFF
                                 cameraController.imageCaptureFlashMode = flashMode
@@ -140,14 +154,19 @@ fun CameraScreen(modifier: Modifier = Modifier, onNavigateUp: () -> Unit) {
                     .height(IntrinsicSize.Max),
                 horizontalArrangement = Arrangement.SpaceAround,
             ) {
-                CameraIconButton(onClick = { /*TODO*/ }) {
+                OnImageIconButton(
+                    onClick = {
+                        photoPickerLauncher.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
+                    }
+                ) {
                     Icon(imageVector = Icons.Rounded.Photo, contentDescription = null)
                 }
-                CameraIconButton(
+                OnImageIconButton(
                     modifier = Modifier.wrapContentSize(),
                     onClick = {
                         coroutineScope.launch {
-                            context.takePhoto(cameraController = cameraController)
+                            val uri = context.takePicture(cameraController = cameraController)
+                            onNavigateToEditPhotoScreen(uri)
                         }
                     }
                 ) {
@@ -157,7 +176,7 @@ fun CameraScreen(modifier: Modifier = Modifier, onNavigateUp: () -> Unit) {
                         contentDescription = null
                     )
                 }
-                CameraIconButton(
+                OnImageIconButton(
                     modifier = Modifier.wrapContentSize(),
                     onClick = {
                         cameraSelector =
@@ -194,7 +213,7 @@ fun CameraPreview(
     )
 }
 
-private suspend fun Context.takePhoto(
+private suspend fun Context.takePicture(
     cameraController: LifecycleCameraController,
 ): Uri = suspendCancellableCoroutine { continuation ->
 

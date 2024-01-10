@@ -56,4 +56,5 @@ abstract class DomainModule {
     @Binds
     @Singleton
     abstract fun bindMessageRepository(messageRepository: FirebaseMessageRepository): MessageRepository
+
 }

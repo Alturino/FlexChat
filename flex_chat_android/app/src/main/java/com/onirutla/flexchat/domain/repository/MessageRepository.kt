@@ -24,6 +24,7 @@
 
 package com.onirutla.flexchat.domain.repository
 
+import android.net.Uri
 import arrow.core.Either
 import com.onirutla.flexchat.core.data.models.MessageResponse
 import com.onirutla.flexchat.domain.models.Message
@@ -35,6 +36,7 @@ interface MessageRepository {
     fun observeMessageByConversationId(conversationId: String): Flow<List<Message>>
     suspend fun getMessageByConversationMemberId(conversationMemberId: String): Either<Exception, List<Message>>
     suspend fun createMessage(messageResponse: MessageResponse): Either<Exception, String>
+    fun createMessageWithAttachment(messageResponse: MessageResponse, uri: Uri): Flow<Unit>
     fun observeMessageByUserId(userId: String): Flow<List<Message>>
     val observeMessage: Flow<List<Message>>
 }

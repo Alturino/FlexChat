@@ -24,6 +24,7 @@
 
 package com.onirutla.flexchat.core.data.repository
 
+import android.net.Uri
 import arrow.core.Either
 import arrow.fx.coroutines.parMap
 import com.google.firebase.firestore.FirebaseFirestore
@@ -38,6 +39,7 @@ import com.onirutla.flexchat.domain.repository.MessageRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.tasks.await
@@ -136,5 +138,16 @@ class FirebaseMessageRepository @Inject constructor(
         if (e is CancellationException)
             throw e
         Either.Left(e)
+    }
+
+    override fun createMessageWithAttachment(
+        messageResponse: MessageResponse,
+        uri: Uri,
+    ): Flow<Unit> = callbackFlow {
+        createMessage(messageResponse)
+            .onRight { }
+            .onLeft { }
+
+        firebaseFirestore.
     }
 }

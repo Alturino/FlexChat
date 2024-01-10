@@ -52,6 +52,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.tasks.await
 import timber.log.Timber
 import javax.inject.Inject
@@ -95,6 +96,8 @@ class FirebaseUserRepository @Inject constructor(
             firebaseAuth.removeAuthStateListener(listener)
         }
     }
+
+    override suspend fun getCurrentUser(): User? = _currentUser.toList().firstOrNull()
 
     override val currentUser: Flow<User> = _currentUser.filterNotNull()
         .flatMapLatest { user ->

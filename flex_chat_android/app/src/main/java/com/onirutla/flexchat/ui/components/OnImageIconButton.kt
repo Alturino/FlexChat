@@ -12,7 +12,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.onirutla.flexchat.ui.theme.FlexChatTheme
 
 @Composable
-fun CameraIconButton(
+fun OnImageIconButton(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
     content: @Composable () -> Unit,
@@ -29,7 +29,7 @@ fun CameraIconButton(
 @Composable
 private fun CameraIconButtonPreview() {
     FlexChatTheme {
-        CameraIconButton(onClick = { /*TODO*/ }) {
+        OnImageIconButton(onClick = { /*TODO*/ }) {
             Icon(imageVector = Icons.Rounded.Camera, contentDescription = null)
         }
     }

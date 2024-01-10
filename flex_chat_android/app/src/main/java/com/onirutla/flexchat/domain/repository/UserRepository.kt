@@ -40,4 +40,5 @@ interface UserRepository {
     val currentUser: Flow<User>
     val isLoggedIn: Flow<Boolean>
     suspend fun getSignInIntentSender(): Either<Exception, IntentSender>
+    suspend fun getCurrentUser(): User?
 }
