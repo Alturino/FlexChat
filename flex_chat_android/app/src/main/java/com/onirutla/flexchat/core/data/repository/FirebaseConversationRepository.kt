@@ -26,6 +26,8 @@ package com.onirutla.flexchat.core.data.repository
 
 import arrow.core.Either
 import arrow.core.getOrElse
+import arrow.core.raise.either
+import arrow.core.raise.ensure
 import arrow.fx.coroutines.parMap
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -43,8 +45,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.tasks.await
-import timber.log.Timber
-import java.util.concurrent.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -59,11 +59,18 @@ class FirebaseConversationRepository @Inject constructor(
 
     override suspend fun getConversationByUserId(
         userId: String,
-    ): Either<Exception, List<Conversation>> = try {
+    ): Either<Throwable, List<Conversation>> = either {
+        ensure(userId.isNotEmpty() or userId.isNotBlank()) {
+            raise(IllegalArgumentException("User id should not be empty or null"))
+        }
+
         val userAsConversationMembers = conversationMemberRepository
             .getConversationMemberByUserId(userId)
-            .onRight { Timber.d("conversationMembers Right: $it") }
-            .fold(ifLeft = { listOf() }, ifRight = { it })
+            .onLeft { raise(it) }
+            .getOrNull()
+        ensure(!userAsConversationMembers.isNullOrEmpty()) {
+            raise(NullPointerException("User as conversation members should not be empty or null"))
+        }
 
         val conversations = userAsConversationMembers.flatMap { userAsConversationMember ->
             conversationRef.whereEqualTo("id", userAsConversationMember.conversationId)
@@ -74,8 +81,11 @@ class FirebaseConversationRepository @Inject constructor(
                 .map { conversationResponse ->
                     val conversationMembers = conversationMemberRepository
                         .getConversationMemberByConversationId(conversationResponse.id)
-                        .onRight { Timber.d("$it") }
-                        .fold(ifLeft = { listOf() }, ifRight = { it })
+                        .onLeft { raise(it) }
+                        .getOrNull()
+                    ensure(!conversationMembers.isNullOrEmpty()) {
+                        NullPointerException("Conversation members should not be null")
+                    }
 
                     conversationResponse.toConversation(
                         conversationMembers = conversationMembers,
@@ -84,50 +94,8 @@ class FirebaseConversationRepository @Inject constructor(
                     )
                 }
         }.sortedByDescending { it.latestMessage.createdAt }
-        Either.Right(conversations)
-    } catch (e: Exception) {
-        Timber.e("on line 87:30 $e")
-        if (e is CancellationException) throw e
-        Either.Left(e)
+        conversations
     }
-
-//    override fun observeConversationByUserId(userId: String): Flow<List<Conversation>> {
-//        val userConversations = conversationMemberRepository
-//            .observeConversationMemberByUserId(userId)
-//            .map { conversationMembers ->
-//                conversationMembers.parMap { conversationMember ->
-//                    getConversationById(conversationMember.conversationId)
-//                        .onRight { Timber.d("$it") }
-//                        .fold(ifLeft = { Conversation() }, ifRight = { it })
-//                }
-//            }
-//        return combine(
-//            userConversations,
-//            messageRepository.observeMessage
-//        ) { conversations, messages ->
-////            messages.flatMap { message ->
-////                conversations.filter { conversation -> conversation.id == message.conversationId }
-////            }.map { conversation ->
-////                val latestMessage = messages.filter { it.conversationId == conversation.id }
-////                    .maxByOrNull { it.createdAt }
-////                if (latestMessage != null)
-////                    conversation.copy(latestMessage = latestMessage)
-////                else
-////                    conversation
-////            }.sortedByDescending { it.latestMessage.createdAt }
-//            conversations.flatMap { conversation ->
-//                messages.filter { message -> message.conversationId == conversation.id }
-//                    .map {
-//                        val latestMessage = messages.filter { it.conversationId == conversation.id }
-//                            .maxByOrNull { it.createdAt }
-//                        if (latestMessage != null)
-//                            conversation.copy(latestMessage = latestMessage)
-//                        else
-//                            conversation
-//                    }
-//            }
-//        }.distinctUntilChanged { old, new -> old == new }
-//    }
 
 
     override suspend fun observeConversationByUserId(userId: String): Flow<List<Conversation>> {
@@ -145,8 +113,7 @@ class FirebaseConversationRepository @Inject constructor(
             messageRepository.observeMessage
         ) { conversations, messages ->
             conversations.parMap { conversation ->
-                val filteredMessages = messages
-                    .filter { it.conversationId == conversation.id }
+                val filteredMessages = messages.filter { it.conversationId == conversation.id }
                 conversation.copy(
                     messages = filteredMessages,
                     latestMessage = filteredMessages.maxByOrNull { it.createdAt } ?: Message()
@@ -158,12 +125,15 @@ class FirebaseConversationRepository @Inject constructor(
 
     override suspend fun getConversationById(
         conversationId: String,
-    ): Either<Exception, Conversation> = try {
+    ): Either<Throwable, Conversation> = either {
         val conversationMembers = conversationMemberRepository
             .getConversationMemberByConversationId(conversationId)
-            .onLeft { Timber.e("on line 121:33 $it") }
-            .onRight { Timber.d("$it") }
-            .fold(ifLeft = { listOf() }, ifRight = { it })
+            .onLeft { raise(it) }
+            .getOrNull()
+
+        ensure(!conversationMembers.isNullOrEmpty()) {
+            raise(NullPointerException("conversation members should not be null or empty"))
+        }
 
         val result = conversationRef
             .document(conversationId)
@@ -175,17 +145,18 @@ class FirebaseConversationRepository @Inject constructor(
                 messages = conversationMembers.flatMap { it.messages }
                     .sortedByDescending { it.createdAt }
             ) ?: Conversation()
-        Either.Right(result)
-    } catch (e: Exception) {
-        Timber.e(e)
-        if (e is CancellationException)
-            throw e
-        Either.Left(e)
+
+        result
     }
 
     override suspend fun createConversation(
         conversationResponse: ConversationResponse,
-    ): Either<Exception, String> = try {
+    ): Either<Throwable, String> = either {
+        with(conversationResponse) {
+            ensure(slug.isNotEmpty() or slug.isNotBlank()) {
+                raise(IllegalArgumentException("slug should not be empty or blank"))
+            }
+        }
         val conversations = conversationRef.whereEqualTo("slug", conversationResponse.slug)
             .get()
             .await()
@@ -193,20 +164,15 @@ class FirebaseConversationRepository @Inject constructor(
 
         val isConversationExist = conversations.isNotEmpty()
         if (isConversationExist) {
-            Either.Right(conversations.first().id)
+            conversations.first().id
         } else {
             val newConversationId = conversationRef.document().id
             val newConversation = conversationResponse.copy(id = newConversationId)
             conversationRef.document(newConversationId)
                 .set(newConversation)
                 .await()
-            Either.Right(newConversationId)
+            newConversationId
         }
-    } catch (e: Exception) {
-        Timber.e("on line 157:33 $e")
-        if (e is CancellationException)
-            throw e
-        Either.Left(e)
     }
 
 }

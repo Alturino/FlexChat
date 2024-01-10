@@ -29,8 +29,11 @@ import android.content.IntentSender
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import arrow.core.Either
+import arrow.core.raise.either
+import arrow.core.raise.ensure
 import com.onirutla.flexchat.core.util.isValidEmail
 import com.onirutla.flexchat.domain.models.RegisterWithUsernameEmailAndPassword
+import com.onirutla.flexchat.domain.models.error_state.PasswordError
 import com.onirutla.flexchat.domain.repository.UserRepository
 import com.onirutla.flexchat.domain.util.isValidPassword
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -40,9 +43,9 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filterNot
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -59,65 +62,156 @@ class RegisterScreenViewModel @Inject constructor(
     private val _state = MutableStateFlow(RegisterScreenState())
     val state = _state.asStateFlow()
 
-    private val isEmailError = _state
+    private val email = _state
         .mapLatest { it.email }
-        .filterNot { it.isEmpty() || it.isBlank() }
-        .mapLatest { !it.isValidEmail() }
+        .distinctUntilChanged()
+        .onEach { Timber.d("email: $it") }
+        .shareIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly
+        )
+
+    private val password = _state
+        .mapLatest { it.password }
+        .distinctUntilChanged()
+        .onEach { Timber.d("password: $it") }
+        .shareIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+        )
+
+    private val confirmPassword = _state
+        .mapLatest { it.confirmPassword }
+        .distinctUntilChanged()
+        .onEach { Timber.d("confirmPassword: $it") }
+        .shareIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+        )
+
+    private val emailError = email
+        .mapLatest { it.isValidEmail() }
+        .distinctUntilChanged()
+        .onEach { Timber.d("emailError: $it") }
+        .shareIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly
+        )
+
+    private val isEmailError = emailError
+        .mapLatest { it.isLeft() }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.Eagerly,
             initialValue = null
         )
 
-    private val password = _state
-        .mapLatest { it.password }
-        .filterNot { it.isEmpty() || it.isBlank() }
+    private val emailErrorMessage = emailError
+        .mapLatest { emailError -> emailError.mapLeft { it.message }.leftOrNull() }
+        .onEach { Timber.d("emailErrorMessage: $it") }
+        .shareIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly
+        )
+
+    private val isPasswordSameAsConfirmPassword = combine(
+        flow = password,
+        flow2 = confirmPassword
+    ) { password, confirmPassword ->
+        either {
+            ensure(password == confirmPassword) {
+                raise(PasswordError.PasswordNotTheSameWithConfirmationPassword)
+            }
+            password
+        }
+    }.distinctUntilChanged()
+        .shareIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly
+        )
+
+    private val isConfirmPasswordSameAsPassword = combine(
+        flow = confirmPassword,
+        flow2 = password
+    ) { confirmPassword, password ->
+        either {
+            ensure(confirmPassword == password) {
+                raise(PasswordError.ConfirmationPasswordNotTheSameWithPassword)
+            }
+            confirmPassword
+        }
+    }.shareIn(
+        scope = viewModelScope,
+        started = SharingStarted.Eagerly
+    )
+
+    private val passwordError = merge(
+        password.mapLatest { it.isValidPassword() },
+        isPasswordSameAsConfirmPassword
+    ).distinctUntilChanged()
+        .onEach { Timber.d("passwordError: $it") }
+        .shareIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly
+        )
+
+    private val passwordErrorMessage = passwordError
+        .mapLatest { passwordError -> passwordError.mapLeft { it.message }.leftOrNull() }
+        .distinctUntilChanged()
+        .onEach { Timber.d("passwordErrorMessage: $it") }
         .shareIn(
             scope = viewModelScope,
             started = SharingStarted.Eagerly,
         )
 
-    private val isPasswordError = password
-        .mapLatest { !it.isValidPassword() }
+    private val isPasswordError = passwordError
+        .mapLatest { it.isLeft() }
+        .onEach { Timber.d("isPasswordError: $it") }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.Eagerly,
             initialValue = null,
         )
 
-    private val confirmPassword = _state
-        .mapLatest { it.confirmPassword }
-        .filterNot { it.isEmpty() || it.isBlank() }
+    private val confirmPasswordError = merge(
+        confirmPassword.mapLatest { it.isValidPassword() },
+        isConfirmPasswordSameAsPassword,
+    ).distinctUntilChanged()
+        .onEach { Timber.d("confirmPasswordError: $it") }
         .shareIn(
             scope = viewModelScope,
             started = SharingStarted.Eagerly,
         )
 
-    private val isConfirmPasswordError = confirmPassword
-        .mapLatest { !it.isValidPassword() }
+    private val isConfirmPasswordError = confirmPasswordError
+        .mapLatest { it.isLeft() }
+        .distinctUntilChanged()
+        .onEach { Timber.d("isConfirmPasswordError: $it") }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.Eagerly,
             initialValue = null
         )
 
-    private val isPasswordSameAsConfirmPassword = merge(
-        password.mapLatest { it == _state.value.confirmPassword },
-        confirmPassword.mapLatest { it == _state.value.password }
-    ).stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.Eagerly,
-        initialValue = false
-    )
+    private val confirmPasswordErrorMessage = confirmPasswordError
+        .mapLatest { confirmPasswordError ->
+            confirmPasswordError.mapLeft { it.message }.leftOrNull()
+        }
+        .distinctUntilChanged()
+        .onEach { Timber.d("confirmPasswordErrorMessage: $it") }
+        .shareIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly
+        )
 
     private val isRegisterButtonEnabled = combine(
         isEmailError,
         isPasswordError,
         isConfirmPasswordError,
-        isPasswordSameAsConfirmPassword
-    ) { isEmailError, isPasswordError, isConfirmPasswordError, isPasswordSameAsConfirmPassword ->
-        (isEmailError == false) && (isPasswordError == false) && (isConfirmPasswordError == false) && isPasswordSameAsConfirmPassword
-    }.distinctUntilChanged { old, new -> old == new }
+    ) { isEmailError, isPasswordError, isConfirmPasswordError ->
+        (isEmailError == false) && (isPasswordError == false) && (isConfirmPasswordError == false)
+    }.distinctUntilChanged()
+        .onEach { Timber.d("isRegisterButtonEnabled: $it") }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.Eagerly,
@@ -132,13 +226,28 @@ class RegisterScreenViewModel @Inject constructor(
                 }
             }
             launch {
+                emailErrorMessage.collect { errorMessage ->
+                    _state.update { it.copy(emailErrorMessage = errorMessage.orEmpty()) }
+                }
+            }
+            launch {
                 isPasswordError.collect { isPasswordError ->
                     _state.update { it.copy(isPasswordError = isPasswordError) }
                 }
             }
             launch {
+                passwordErrorMessage.collect { errorMessage ->
+                    _state.update { it.copy(passwordErrorMessage = errorMessage.orEmpty()) }
+                }
+            }
+            launch {
                 isConfirmPasswordError.collect { isConfirmPasswordError ->
                     _state.update { it.copy(isConfirmPasswordError = isConfirmPasswordError) }
+                }
+            }
+            launch {
+                confirmPasswordErrorMessage.collect { errorMessage ->
+                    _state.update { it.copy(confirmPasswordErrorMessage = errorMessage.orEmpty()) }
                 }
             }
             launch {
@@ -174,7 +283,7 @@ class RegisterScreenViewModel @Inject constructor(
         }
     }
 
-    suspend fun getSignInIntentSender(): Either<Exception, IntentSender> =
+    suspend fun getSignInIntentSender(): Either<Throwable, IntentSender> =
         userRepository.getSignInIntentSender()
 
     fun onEvent(event: RegisterScreenEvent) {

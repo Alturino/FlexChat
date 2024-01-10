@@ -12,8 +12,8 @@ interface AttachmentRepository {
     suspend fun getAttachmentByUserId(userId: String): Either<GetAttachmentError, List<AttachmentResponse>>
     suspend fun createAttachment(
         attachment: AttachmentResponse,
-        onProgress: (percent: Double) -> Unit,
-        uri: Uri,
+        onProgress: (percent: Double, bytesTransferred: Long, totalByteCount: Long) -> Unit,
+        uri: Uri
     ): Either<CreateAttachmentError, Unit>
 }
 

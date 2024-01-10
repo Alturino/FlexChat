@@ -25,6 +25,10 @@
 package com.onirutla.flexchat.core.data.repository
 
 import arrow.core.Either
+import arrow.core.getOrElse
+import arrow.core.raise.either
+import arrow.core.raise.ensure
+import arrow.core.raise.ensureNotNull
 import arrow.fx.coroutines.parMap
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -41,7 +45,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.tasks.await
 import timber.log.Timber
-import java.util.concurrent.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -57,23 +60,34 @@ class FirebaseConversationMemberRepository @Inject constructor(
 
     override suspend fun getConversationMemberByUserId(
         userId: String,
-    ): Either<Exception, List<ConversationMember>> = try {
-        val conversationMembers = conversationMemberRef.whereEqualTo("userId", userId)
-            .get()
-            .await()
-            .toObjects<ConversationMemberResponse>()
-            .parMap { conversationMemberResponse ->
-                val messages = messageRepository
-                    .getMessageByConversationMemberId(conversationMemberId = conversationMemberResponse.id)
-                    .onRight { Timber.d("$it") }
-                    .fold(ifLeft = { listOf() }, ifRight = { it })
-                conversationMemberResponse.toConversationMember(messages = messages)
-            }
-        Either.Right(conversationMembers)
-    } catch (e: Exception) {
-        Timber.e("on line 74:30 $e")
-        if (e is CancellationException) throw e
-        Either.Left(e)
+    ): Either<Throwable, List<ConversationMember>> = either {
+        ensure(userId.isNotEmpty() or userId.isNotBlank()) {
+            raise(IllegalArgumentException("userId should not be empty or blank"))
+        }
+
+        val conversationMembers = Either.catch {
+            conversationMemberRef.whereEqualTo("userId", userId)
+                .get()
+                .await()
+                .toObjects<ConversationMemberResponse>()
+                .parMap { conversationMemberResponse ->
+                    val messages = messageRepository
+                        .getMessageByConversationMemberId(conversationMemberId = conversationMemberResponse.id)
+                        .onLeft { raise(it) }
+                        .getOrNull()
+                    ensure(!messages.isNullOrEmpty()) {
+                        raise(NullPointerException("Message should not be empty or"))
+                    }
+                    conversationMemberResponse.toConversationMember(messages = messages)
+                }
+        }.onLeft { raise(it) }
+            .getOrNull()
+
+        ensure(!conversationMembers.isNullOrEmpty()) {
+            raise(NullPointerException("Conversation members should not be empty or null"))
+        }
+
+        conversationMembers
     }
 
     override fun observeConversationMemberByUserId(
@@ -108,7 +122,11 @@ class FirebaseConversationMemberRepository @Inject constructor(
 
     override suspend fun getConversationMemberByConversationId(
         conversationId: String,
-    ): Either<Exception, List<ConversationMember>> = try {
+    ): Either<Throwable, List<ConversationMember>> = either {
+        ensure(conversationId.isNotEmpty() or conversationId.isNotBlank()) {
+            raise(IllegalArgumentException("Conversation id should not be empty or blank"))
+        }
+
         val conversationMembers = conversationMemberRef
             .whereEqualTo("conversationId", conversationId)
             .orderBy("joinedAt", Query.Direction.DESCENDING)
@@ -118,20 +136,31 @@ class FirebaseConversationMemberRepository @Inject constructor(
             .parMap { conversationMemberResponse ->
                 val messages = messageRepository
                     .getMessageByConversationMemberId(conversationMemberId = conversationMemberResponse.id)
-                    .onRight { Timber.d("$it") }
-                    .fold(ifLeft = { listOf() }, ifRight = { it })
+                    .onLeft { raise(it) }
+                    .getOrElse { listOf() }
+                ensure(messages.isNotEmpty()) {
+                    raise(NullPointerException("Message should not be empty"))
+                }
                 conversationMemberResponse.toConversationMember(messages = messages)
             }
-        Either.Right(conversationMembers)
-    } catch (e: Exception) {
-        Timber.e("on line 114:30 $e")
-        if (e is CancellationException) throw e
-        Either.Left(e)
+        ensure(conversationMembers.isNotEmpty()) {
+            raise(NullPointerException("Conversation members should not be empty"))
+        }
+        conversationMembers
     }
 
     override suspend fun createConversationMember(
         conversationMemberResponse: ConversationMemberResponse,
-    ): Either<Exception, String> = try {
+    ): Either<Throwable, String> = either {
+        with(conversationMemberResponse) {
+            ensure(userId.isNotEmpty() or userId.isNotBlank()) {
+                raise(IllegalArgumentException("User id should not be empty or null"))
+            }
+            ensure(conversationId.isNotEmpty() or conversationId.isNotBlank()) {
+                raise(IllegalArgumentException("Conversation id should not be empty or null"))
+            }
+        }
+
         val conversationMembers = conversationMemberRef
             .whereEqualTo("userId", conversationMemberResponse.userId)
             .whereEqualTo("conversationId", conversationMemberResponse.conversationId)
@@ -141,7 +170,11 @@ class FirebaseConversationMemberRepository @Inject constructor(
 
         val isConversationMemberExist = conversationMembers.isNotEmpty()
         if (isConversationMemberExist) {
-            Either.Right(conversationMembers.first().id)
+            val conversationMemberId = conversationMembers.firstOrNull()?.id
+            ensureNotNull(conversationMemberId) {
+                raise(NullPointerException("Conversation member id should not be null"))
+            }
+            conversationMemberId
         } else {
             val newConversationMemberId = conversationMemberRef.document().id
             val newConversationMember = conversationMemberResponse
@@ -149,12 +182,7 @@ class FirebaseConversationMemberRepository @Inject constructor(
             conversationMemberRef.document(newConversationMemberId)
                 .set(newConversationMember)
                 .await()
-            Either.Right(newConversationMemberId)
+            newConversationMemberId
         }
-    } catch (e: Exception) {
-        Timber.e("on line 142:30 $e")
-        if (e is CancellationException)
-            throw e
-        Either.Left(e)
     }
 }

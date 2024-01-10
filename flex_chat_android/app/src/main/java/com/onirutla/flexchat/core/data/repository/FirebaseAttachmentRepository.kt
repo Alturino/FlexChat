@@ -29,20 +29,22 @@ class FirebaseAttachmentRepository(
 
     override suspend fun createAttachment(
         attachment: AttachmentResponse,
-        onProgress: (percent: Double) -> Unit,
+        onProgress: (percent: Double, bytesTransferred: Long, totalByteCount: Long) -> Unit,
         uri: Uri,
     ): Either<CreateAttachmentError, Unit> = either {
-        ensure(attachment.userId.isNotEmpty() or attachment.userId.isNotBlank()) {
-            CreateAttachmentError.UserIdEmptyOrBlank
-        }
-        ensure(attachment.messageId.isNotEmpty() or attachment.messageId.isNotBlank()) {
-            CreateAttachmentError.MessageIdEmptyOrBlank
-        }
-        ensure(attachment.conversationId.isNotEmpty() or attachment.conversationId.isNotBlank()) {
-            CreateAttachmentError.ConversationIdEmptyOrBlank
-        }
-        ensure(uri != Uri.EMPTY) {
-            CreateAttachmentError.UriEmpty
+        with(attachment) {
+            ensure(userId.isNotEmpty() or userId.isNotBlank()) {
+                CreateAttachmentError.UserIdEmptyOrBlank
+            }
+            ensure(messageId.isNotEmpty() or messageId.isNotBlank()) {
+                CreateAttachmentError.MessageIdEmptyOrBlank
+            }
+            ensure(conversationId.isNotEmpty() or conversationId.isNotBlank()) {
+                CreateAttachmentError.ConversationIdEmptyOrBlank
+            }
+            ensure(uri != Uri.EMPTY) {
+                CreateAttachmentError.UriEmpty
+            }
         }
 
         val file = uri.toFile()
@@ -54,25 +56,24 @@ class FirebaseAttachmentRepository(
             setCustomMetadata("messageId", attachment.messageId)
         }
         val childRef = attachmentStorage.child("attachments/${file.name}")
-        childRef.putFile(uri, metadata)
+        val uploadTask = childRef.putFile(uri, metadata)
             .addOnProgressListener {
                 val progress = (100.0 * it.bytesTransferred) / it.totalByteCount
                 Timber.d("Upload file with uri:$uri, with progress: $progress%")
-                onProgress(progress)
+                onProgress(progress, it.bytesTransferred, it.totalByteCount)
             }
             .addOnFailureListener {
                 raise(CreateAttachmentError.FailedToInsertToStorage(it))
             }
             .await()
 
-        val downloadUrl = Either.catch {
-            childRef.downloadUrl
-                .addOnFailureListener {
-                    raise(CreateAttachmentError.FailedToRetrieveDownloadUrl(it))
-                }
-                .toString()
-        }.onLeft { raise(CreateAttachmentError.UnknownError(it)) }
-            .getOrElse { "" }
+        val downloadUrl = childRef.downloadUrl
+            .addOnFailureListener {
+                raise(CreateAttachmentError.FailedToRetrieveDownloadUrl(it))
+            }
+            .await()
+            .toString()
+
         ensure(downloadUrl.isNotEmpty() or downloadUrl.isNotEmpty()) {
             CreateAttachmentError.DownloadUrlEmptyOrBlank
         }

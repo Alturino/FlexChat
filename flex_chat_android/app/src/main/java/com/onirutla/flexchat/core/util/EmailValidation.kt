@@ -22,16 +22,19 @@
  * SOFTWARE.
  */
 
-package com.onirutla.flexchat.domain.util
+package com.onirutla.flexchat.core.util
 
-fun String.isValidPassword(): Boolean {
-    val isNotBlank = isNotBlank()
-    val isNotEmpty = isNotEmpty()
-    val isLengthGreaterThanEqualEight = length >= 8
-    val containsDigit = firstOrNull { it.isDigit() } != null
-    val containsNonAlnum = firstOrNull { !it.isLetterOrDigit() } != null
-    val containsUppercase = firstOrNull { it.isUpperCase() } != null
-    val containsLowercase = firstOrNull { it.isLowerCase() } != null
+import androidx.core.util.PatternsCompat
+import arrow.core.raise.either
+import arrow.core.raise.ensure
+import com.onirutla.flexchat.domain.models.error_state.EmailError
 
-    return isNotBlank and isNotEmpty and isLengthGreaterThanEqualEight and containsDigit and containsNonAlnum and containsLowercase and containsUppercase
+fun String.isValidEmail() = either {
+    ensure(isNotBlank() or isNotEmpty()) {
+        raise(EmailError.EmptyOrBlank)
+    }
+    ensure(PatternsCompat.EMAIL_ADDRESS.matcher(this@isValidEmail).matches()) {
+        raise(EmailError.NotValidEmail)
+    }
+    this@isValidEmail
 }

@@ -30,9 +30,9 @@ import com.onirutla.flexchat.domain.models.ConversationMember
 import kotlinx.coroutines.flow.Flow
 
 interface ConversationMemberRepository {
-    suspend fun getConversationMemberByUserId(userId: String): Either<Exception, List<ConversationMember>>
-    suspend fun getConversationMemberByConversationId(conversationId: String): Either<Exception, List<ConversationMember>>
-    suspend fun createConversationMember(conversationMemberResponse: ConversationMemberResponse): Either<Exception, String>
+    suspend fun getConversationMemberByUserId(userId: String): Either<Throwable, List<ConversationMember>>
+    suspend fun getConversationMemberByConversationId(conversationId: String): Either<Throwable, List<ConversationMember>>
+    suspend fun createConversationMember(conversationMemberResponse: ConversationMemberResponse): Either<Throwable, String>
     fun observeConversationMemberByUserId(userId: String): Flow<List<ConversationMember>>
     fun observeConversationMemberByConversationId(conversationId: String): Flow<List<ConversationMember>>
 }

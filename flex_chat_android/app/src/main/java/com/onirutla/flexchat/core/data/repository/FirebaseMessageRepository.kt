@@ -26,6 +26,8 @@ package com.onirutla.flexchat.core.data.repository
 
 import android.net.Uri
 import arrow.core.Either
+import arrow.core.raise.either
+import arrow.core.raise.ensure
 import arrow.fx.coroutines.parMap
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -36,7 +38,6 @@ import com.onirutla.flexchat.core.data.models.MessageResponse
 import com.onirutla.flexchat.core.data.models.toMessage
 import com.onirutla.flexchat.domain.models.Message
 import com.onirutla.flexchat.domain.repository.MessageRepository
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -57,38 +58,35 @@ class FirebaseMessageRepository @Inject constructor(
 
     override suspend fun getMessageByUserId(
         userId: String,
-    ): Either<Exception, List<Message>> = try {
+    ): Either<Throwable, List<Message>> = either {
+        ensure(userId.isNotEmpty() or userId.isNotBlank()) {
+            raise(IllegalArgumentException("User id should not be empty or blank"))
+        }
         val messages = messageRef.whereEqualTo("userId", userId)
             .get()
             .await()
             .toObjects<MessageResponse>()
             .parMap { it.toMessage() }
-        Either.Right(messages)
-    } catch (e: Exception) {
-        Timber.e(e)
-        if (e is CancellationException)
-            throw e
-        Either.Left(e)
+        messages
     }
 
     override suspend fun getMessageByConversationId(
         conversationId: String,
-    ): Either<Exception, List<Message>> = try {
+    ): Either<Throwable, List<Message>> = either {
+        ensure(conversationId.isNotEmpty() or conversationId.isNotBlank()) {
+            raise(IllegalArgumentException("Conversation id should not be empty or blank"))
+        }
         val messages = messageRef.whereEqualTo("conversationId", conversationId)
             .get()
             .await()
             .toObjects<MessageResponse>()
             .parMap { it.toMessage() }
-        Either.Right(messages)
-    } catch (e: Exception) {
-        Timber.e(e)
-        if (e is CancellationException)
-            throw e
-        Either.Left(e)
+        messages
     }
 
-    override val observeMessage: Flow<List<Message>>
-        get() = messageRef.snapshots().mapLatest { snapshot ->
+    override val observeMessage: Flow<List<Message>> = messageRef
+        .snapshots()
+        .mapLatest { snapshot ->
             snapshot.toObjects<MessageResponse>().parMap { it.toMessage() }
         }
 
@@ -111,33 +109,44 @@ class FirebaseMessageRepository @Inject constructor(
 
     override suspend fun getMessageByConversationMemberId(
         conversationMemberId: String,
-    ): Either<Exception, List<Message>> = try {
+    ): Either<Throwable, List<Message>> = either {
+        ensure(conversationMemberId.isNotEmpty() or conversationMemberId.isNotBlank()) {
+            IllegalArgumentException("Conversation member id should not be empty or blank")
+        }
         val messages = messageRef
             .whereEqualTo("conversationMemberId", conversationMemberId)
             .get()
             .await()
             .toObjects<MessageResponse>()
             .parMap { it.toMessage() }
-        Either.Right(messages)
-    } catch (e: Exception) {
-        Timber.e(e)
-        if (e is CancellationException)
-            throw e
-        Either.Left(e)
+        messages
     }
 
     override suspend fun createMessage(
         messageResponse: MessageResponse,
-    ): Either<Exception, String> = try {
+    ): Either<Throwable, String> = either {
+        with(messageResponse) {
+            ensure(userId.isNotEmpty() or userId.isNotBlank()) {
+                IllegalArgumentException("User id should not be empty or blank")
+            }
+            ensure(conversationId.isNotEmpty() or conversationId.isNotBlank()) {
+                IllegalArgumentException("Conversation id should not be empty or blank")
+            }
+            ensure(conversationMemberId.isNotEmpty() or conversationMemberId.isNotBlank()) {
+                IllegalArgumentException("Conversation member id should not be empty or blank")
+            }
+            ensure(messageBody.isNotEmpty() or messageBody.isNotBlank()) {
+                IllegalArgumentException("Message body should not be empty or blank")
+            }
+            ensure(senderName.isNotEmpty() or senderName.isNotBlank()) {
+                IllegalArgumentException("Sender name should not be empty or blank")
+            }
+        }
         val messageId = messageRef.document().id
-        messageRef.document(messageId).set(messageResponse.copy(id = messageId))
+        messageRef.document(messageId)
+            .set(messageResponse.copy(id = messageId))
             .await()
-        Either.Right(messageId)
-    } catch (e: Exception) {
-        Timber.e(e)
-        if (e is CancellationException)
-            throw e
-        Either.Left(e)
+        messageId
     }
 
     override fun createMessageWithAttachment(
@@ -148,6 +157,5 @@ class FirebaseMessageRepository @Inject constructor(
             .onRight { }
             .onLeft { }
 
-        firebaseFirestore.
     }
 }

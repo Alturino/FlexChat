@@ -27,6 +27,7 @@ package com.onirutla.flexchat.domain.repository
 import android.content.Intent
 import android.content.IntentSender
 import arrow.core.Either
+import com.google.firebase.auth.AuthResult
 import com.onirutla.flexchat.domain.models.RegisterWithUsernameEmailAndPassword
 import com.onirutla.flexchat.domain.models.User
 import kotlinx.coroutines.flow.Flow
@@ -34,11 +35,11 @@ import kotlinx.coroutines.flow.Flow
 interface UserRepository {
     fun getUserByUsername(username: String): Flow<List<User>>
     fun signOut()
-    suspend fun login(email: String, password: String): Either<Exception, Unit>
-    suspend fun loginWithGoogle(intent: Intent): Either<Exception, User>
-    suspend fun registerWithEmailAndPassword(registerArg: RegisterWithUsernameEmailAndPassword): Either<Exception, Unit>
+    suspend fun login(email: String, password: String): Either<Throwable, AuthResult>
+    suspend fun loginWithGoogle(intent: Intent): Either<Throwable, User>
+    suspend fun registerWithEmailAndPassword(registerArg: RegisterWithUsernameEmailAndPassword): Either<Throwable, Unit>
     val currentUser: Flow<User>
     val isLoggedIn: Flow<Boolean>
-    suspend fun getSignInIntentSender(): Either<Exception, IntentSender>
+    suspend fun getSignInIntentSender(): Either<Throwable, IntentSender>
     suspend fun getCurrentUser(): User?
 }

@@ -31,11 +31,11 @@ import com.onirutla.flexchat.domain.models.Message
 import kotlinx.coroutines.flow.Flow
 
 interface MessageRepository {
-    suspend fun getMessageByUserId(userId: String): Either<Exception, List<Message>>
-    suspend fun getMessageByConversationId(conversationId: String): Either<Exception, List<Message>>
+    suspend fun getMessageByUserId(userId: String): Either<Throwable, List<Message>>
+    suspend fun getMessageByConversationId(conversationId: String): Either<Throwable, List<Message>>
     fun observeMessageByConversationId(conversationId: String): Flow<List<Message>>
-    suspend fun getMessageByConversationMemberId(conversationMemberId: String): Either<Exception, List<Message>>
-    suspend fun createMessage(messageResponse: MessageResponse): Either<Exception, String>
+    suspend fun getMessageByConversationMemberId(conversationMemberId: String): Either<Throwable, List<Message>>
+    suspend fun createMessage(messageResponse: MessageResponse): Either<Throwable, String>
     fun createMessageWithAttachment(messageResponse: MessageResponse, uri: Uri): Flow<Unit>
     fun observeMessageByUserId(userId: String): Flow<List<Message>>
     val observeMessage: Flow<List<Message>>

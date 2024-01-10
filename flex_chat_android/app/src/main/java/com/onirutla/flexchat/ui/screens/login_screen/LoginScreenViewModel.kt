@@ -33,13 +33,21 @@ import com.onirutla.flexchat.core.util.isValidEmail
 import com.onirutla.flexchat.domain.repository.UserRepository
 import com.onirutla.flexchat.domain.util.isValidPassword
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.shareIn
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class LoginScreenViewModel @Inject constructor(
     private val userRepository: UserRepository,
@@ -48,15 +56,103 @@ class LoginScreenViewModel @Inject constructor(
     private val _state = MutableStateFlow(LoginScreenState())
     val state = _state.asStateFlow()
 
+    private val email = _state.mapLatest { it.email }
+        .distinctUntilChanged()
+        .onEach { Timber.d("email: $it") }
+        .shareIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly
+        )
+
+    private val emailError = email.mapLatest { it.isValidEmail() }
+        .onEach { Timber.d("emailError: $it") }
+        .shareIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly
+        )
+
+    private val isEmailError = emailError.mapLatest { it.isLeft() }
+        .distinctUntilChanged()
+        .onEach { Timber.d("isEmailError: $it") }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = null
+        )
+
+    private val emailErrorMessage = emailError
+        .mapLatest { emailError -> emailError.mapLeft { it.message }.leftOrNull() }
+        .distinctUntilChanged()
+        .onEach { Timber.d("emailErrorMessage: $it") }
+        .shareIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly
+        )
+
+    private val password = _state.mapLatest { it.password }
+        .distinctUntilChanged()
+        .onEach { Timber.d("password: $it") }
+        .shareIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly
+        )
+
+    private val passwordError = password.mapLatest { it.isValidPassword() }
+        .distinctUntilChanged()
+        .onEach { Timber.d("passwordError: $it") }
+        .shareIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly
+        )
+
+    private val isPasswordError = passwordError.mapLatest { it.isLeft() }
+        .distinctUntilChanged()
+        .onEach { Timber.d("isPasswordError: $it") }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = null
+        )
+
+    private val passwordErrorMessage = passwordError
+        .mapLatest { passwordError -> passwordError.mapLeft { it.message }.leftOrNull() }
+        .distinctUntilChanged()
+        .onEach { Timber.d("passwordErrorMessage: $it") }
+        .shareIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly
+        )
+
+
+    init {
+        viewModelScope.launch {
+            launch {
+                isEmailError.collect { isEmailError ->
+                    _state.update { it.copy(isEmailError = isEmailError) }
+                }
+            }
+            launch {
+                emailErrorMessage.collect { errorMessage ->
+                    _state.update { it.copy(emailErrorMessage = errorMessage.orEmpty()) }
+                }
+            }
+            launch {
+                isPasswordError.collect { isPasswordError ->
+                    _state.update { it.copy(isPasswordError = isPasswordError) }
+                }
+            }
+            launch {
+                passwordErrorMessage.collect { errorMessage ->
+                    _state.update { it.copy(passwordErrorMessage = errorMessage.orEmpty()) }
+                }
+            }
+        }
+    }
+
     fun onEvent(event: LoginScreenEvent) {
         when (event) {
             is LoginScreenEvent.OnEmailChange -> {
-                _state.update {
-                    it.copy(
-                        email = event.email,
-                        isEmailError = event.email.isValidEmail()
-                    )
-                }
+                _state.update { it.copy(email = event.email) }
             }
 
             is LoginScreenEvent.OnIsPasswordVisibleChange -> {
@@ -79,12 +175,7 @@ class LoginScreenViewModel @Inject constructor(
             }
 
             is LoginScreenEvent.OnPasswordChange -> {
-                _state.update {
-                    it.copy(
-                        password = event.password,
-                        isEmailError = event.password.isValidPassword()
-                    )
-                }
+                _state.update { it.copy(password = event.password) }
             }
         }
     }
@@ -113,7 +204,7 @@ class LoginScreenViewModel @Inject constructor(
         }
     }
 
-    suspend fun getSignInIntentSender(): Either<Exception, IntentSender> =
+    suspend fun getSignInIntentSender(): Either<Throwable, IntentSender> =
         userRepository.getSignInIntentSender()
 
 }

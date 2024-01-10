@@ -134,6 +134,7 @@ fun RegisterScreen(
                     modifier = Modifier.fillMaxWidth(),
                     email = state.email,
                     isError = state.isEmailError == true,
+                    errorMessage = state.emailErrorMessage,
                     onEmailChange = { onEvent(RegisterScreenEvent.OnEmailChange(it)) },
                     onNext = { defaultKeyboardAction(imeAction = ImeAction.Next) }
                 )
@@ -141,6 +142,7 @@ fun RegisterScreen(
                     modifier = Modifier.fillMaxWidth(),
                     password = state.password,
                     isError = state.isPasswordError == true,
+                    errorMessage = state.passwordErrorMessage,
                     onPasswordChange = { onEvent(RegisterScreenEvent.OnPasswordChange(it)) },
                     isPasswordVisible = state.isPasswordVisible,
                     keyboardOptions = KeyboardOptions(
@@ -157,6 +159,7 @@ fun RegisterScreen(
                     label = stringResource(R.string.confirm_password),
                     password = state.confirmPassword,
                     isError = state.isConfirmPasswordError == true,
+                    errorMessage = state.confirmPasswordErrorMessage,
                     onPasswordChange = { onEvent(RegisterScreenEvent.OnConfirmPasswordChange(it)) },
                     isPasswordVisible = state.isConfirmPasswordVisible,
                     onPasswordVisibleChange = {

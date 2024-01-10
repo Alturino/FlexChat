@@ -22,9 +22,25 @@
  * SOFTWARE.
  */
 
-package com.onirutla.flexchat.core.util
+package com.onirutla.flexchat.domain.util
 
-import androidx.core.util.PatternsCompat
+import arrow.core.Either
+import arrow.core.raise.either
+import arrow.core.raise.ensure
+import com.onirutla.flexchat.domain.models.error_state.PasswordError
 
-fun String.isValidEmail() = (this.isNotBlank() or this.isNotEmpty()) and
-    PatternsCompat.EMAIL_ADDRESS.matcher(this).matches()
+fun String.isValidPassword(): Either<PasswordError, String> = either {
+    ensure(isNotEmpty() or isNotBlank()) { raise(PasswordError.EmptyOrBlank) }
+    ensure(isContainsLowercase()) { raise(PasswordError.NotContainsLowercase) }
+    ensure(isContainsUppercase()) { raise(PasswordError.NotContainsUppercase) }
+    ensure(isContainsAlphaNum()) { raise(PasswordError.NotContainNonAlphaNum) }
+    ensure(isContainsDigit()) { raise(PasswordError.NotContainsDigit) }
+    ensure(isLengthGreaterThanEqual()) { raise(PasswordError.TooShort) }
+    this@isValidPassword
+}
+
+fun String.isContainsDigit() = firstOrNull { it.isDigit() } != null
+fun String.isContainsAlphaNum() = firstOrNull { !it.isLetterOrDigit() } != null
+fun String.isContainsUppercase() = firstOrNull { it.isUpperCase() } != null
+fun String.isLengthGreaterThanEqual(number: Int = 8) = length >= number
+fun String.isContainsLowercase() = firstOrNull { it.isLowerCase() } != null

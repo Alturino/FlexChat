@@ -42,7 +42,6 @@ import androidx.navigation.navArgument
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
-import com.onirutla.flexchat.ui.screens.confirmation_send_photo_screen.ConfirmationSendPhotoScreen
 import com.onirutla.flexchat.ui.screens.Screens
 import com.onirutla.flexchat.ui.screens.SharedViewModel
 import com.onirutla.flexchat.ui.screens.add_new_conversation_screen.AddNewConversationScreen
@@ -50,6 +49,8 @@ import com.onirutla.flexchat.ui.screens.add_new_conversation_screen.AddNewConver
 import com.onirutla.flexchat.ui.screens.add_new_conversation_screen.AddNewConversationScreenViewModel
 import com.onirutla.flexchat.ui.screens.authNavGraph
 import com.onirutla.flexchat.ui.screens.camera_screen.CameraScreen
+import com.onirutla.flexchat.ui.screens.confirmation_send_photo_screen.ConfirmationSendPhotoScreen
+import com.onirutla.flexchat.ui.screens.confirmation_send_photo_screen.ConfirmationSendPhotoScreenState
 import com.onirutla.flexchat.ui.screens.conversation_screen.ConversationScreen
 import com.onirutla.flexchat.ui.screens.conversation_screen.ConversationScreenUiEvent
 import com.onirutla.flexchat.ui.screens.conversation_screen.ConversationScreenViewModel
@@ -257,7 +258,12 @@ fun FlexChatNavigation(
             val arg = backStackEntry.arguments?.getString("photoUri", "").orEmpty()
             val decodedUri = Uri.decode(arg)
             val photoUri = decodedUri.toUri()
-            ConfirmationSendPhotoScreen(photoUri = photoUri)
+            ConfirmationSendPhotoScreen(
+                state = ConfirmationSendPhotoScreenState(
+                    photoUri = photoUri,
+                    ""
+                )
+            )
         }
     }
 }
