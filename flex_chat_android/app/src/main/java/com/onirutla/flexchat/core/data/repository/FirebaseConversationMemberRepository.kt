@@ -136,9 +136,6 @@ class FirebaseConversationMemberRepository @Inject constructor(
                     val messages = messageRepository
                         .getMessageByConversationMemberId(conversationMemberId = conversationMemberResponse.id)
                         .bind()
-                    ensure(messages.isNotEmpty()) {
-                        raise(NullPointerException("Message should not be empty"))
-                    }
                     conversationMemberResponse.toConversationMember(messages = messages)
                 }
         }.bind()

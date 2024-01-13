@@ -78,18 +78,20 @@ class FirebaseMessageRepository @Inject constructor(
         ensure(conversationId.isNotEmpty() or conversationId.isNotBlank()) {
             raise(IllegalArgumentException("Conversation id should not be empty or blank"))
         }
-        val messages = messageRef.whereEqualTo("conversationId", conversationId)
-            .get()
-            .await()
-            .toObjects<MessageResponse>()
-            .parMap { it.toMessage() }
+        val messages = Either.catch {
+            messageRef.whereEqualTo("conversationId", conversationId)
+                .get()
+                .await()
+                .toObjects<MessageResponse>()
+                .parMap { it.toMessage() }
+        }.bind()
         messages
     }
 
     override val observeMessage: Flow<List<Message>> = messageRef
         .snapshots()
         .mapLatest { snapshot ->
-            snapshot.toObjects<MessageResponse>().parMap { it.toMessage() }
+            snapshot.toObjects<MessageResponse>().map { it.toMessage() }
         }
 
     override fun observeMessageByConversationId(
@@ -98,7 +100,7 @@ class FirebaseMessageRepository @Inject constructor(
         .orderBy("createdAt", Query.Direction.DESCENDING)
         .snapshots()
         .mapLatest { snapshot ->
-            snapshot.toObjects<MessageResponse>().parMap { it.toMessage() }
+            snapshot.toObjects<MessageResponse>().map { it.toMessage() }
         }.catch {
             Timber.e(it)
         }
@@ -108,7 +110,7 @@ class FirebaseMessageRepository @Inject constructor(
         .orderBy("createdAt", Query.Direction.DESCENDING)
         .snapshots()
         .mapLatest { snapshot ->
-            snapshot.toObjects<MessageResponse>().parMap { it.toMessage() }
+            snapshot.toObjects<MessageResponse>().map { it.toMessage() }
         }.catch { Timber.e(it) }
 
     override suspend fun getMessageByConversationMemberId(
@@ -123,7 +125,7 @@ class FirebaseMessageRepository @Inject constructor(
                 .get()
                 .await()
                 .toObjects<MessageResponse>()
-                .parMap { it.toMessage() }
+                .map { it.toMessage() }
         }.bind()
         messages
     }

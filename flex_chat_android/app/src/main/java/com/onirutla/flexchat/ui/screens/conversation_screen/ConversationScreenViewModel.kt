@@ -34,8 +34,10 @@ class ConversationScreenViewModel @Inject constructor(
     val state = _state.asStateFlow()
 
     operator fun invoke(conversationId: String) {
+        Timber.d("conversationId: $conversationId")
         viewModelScope.launch {
             conversationRepository.getConversationById(conversationId)
+                .onLeft { Timber.e(it) }
                 .onRight { conversation ->
                     _state.update { it.copy(conversation = conversation) }
                 }
