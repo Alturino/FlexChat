@@ -62,11 +62,13 @@ class FirebaseMessageRepository @Inject constructor(
         ensure(userId.isNotEmpty() or userId.isNotBlank()) {
             raise(IllegalArgumentException("User id should not be empty or blank"))
         }
-        val messages = messageRef.whereEqualTo("userId", userId)
-            .get()
-            .await()
-            .toObjects<MessageResponse>()
-            .parMap { it.toMessage() }
+        val messages = Either.catch {
+            messageRef.whereEqualTo("userId", userId)
+                .get()
+                .await()
+                .toObjects<MessageResponse>()
+                .parMap { it.toMessage() }
+        }.bind()
         messages
     }
 
@@ -97,6 +99,8 @@ class FirebaseMessageRepository @Inject constructor(
         .snapshots()
         .mapLatest { snapshot ->
             snapshot.toObjects<MessageResponse>().parMap { it.toMessage() }
+        }.catch {
+            Timber.e(it)
         }
 
     override fun observeMessageByUserId(userId: String): Flow<List<Message>> = messageRef
@@ -105,7 +109,7 @@ class FirebaseMessageRepository @Inject constructor(
         .snapshots()
         .mapLatest { snapshot ->
             snapshot.toObjects<MessageResponse>().parMap { it.toMessage() }
-        }.catch { Timber.e("observeMessageByUserId on line 107: $it") }
+        }.catch { Timber.e(it) }
 
     override suspend fun getMessageByConversationMemberId(
         conversationMemberId: String,
@@ -113,12 +117,14 @@ class FirebaseMessageRepository @Inject constructor(
         ensure(conversationMemberId.isNotEmpty() or conversationMemberId.isNotBlank()) {
             IllegalArgumentException("Conversation member id should not be empty or blank")
         }
-        val messages = messageRef
-            .whereEqualTo("conversationMemberId", conversationMemberId)
-            .get()
-            .await()
-            .toObjects<MessageResponse>()
-            .parMap { it.toMessage() }
+        val messages = Either.catch {
+            messageRef
+                .whereEqualTo("conversationMemberId", conversationMemberId)
+                .get()
+                .await()
+                .toObjects<MessageResponse>()
+                .parMap { it.toMessage() }
+        }.bind()
         messages
     }
 
@@ -143,12 +149,15 @@ class FirebaseMessageRepository @Inject constructor(
             }
         }
         val messageId = messageRef.document().id
-        messageRef.document(messageId)
-            .set(messageResponse.copy(id = messageId))
-            .await()
+        Either.catch {
+            messageRef.document(messageId)
+                .set(messageResponse.copy(id = messageId))
+                .await()
+        }.bind()
         messageId
     }
 
+    // TODO: Not yet implemented
     override fun createMessageWithAttachment(
         messageResponse: MessageResponse,
         uri: Uri,

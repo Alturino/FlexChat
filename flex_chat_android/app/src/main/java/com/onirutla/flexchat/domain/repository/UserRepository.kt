@@ -37,7 +37,7 @@ interface UserRepository {
     fun signOut()
     suspend fun login(email: String, password: String): Either<Throwable, AuthResult>
     suspend fun loginWithGoogle(intent: Intent): Either<Throwable, User>
-    suspend fun registerWithEmailAndPassword(registerArg: RegisterWithUsernameEmailAndPassword): Either<Throwable, Unit>
+    suspend fun registerWithEmailAndPassword(registerArg: RegisterWithUsernameEmailAndPassword): Either<Throwable, User>
     val currentUser: Flow<User>
     val isLoggedIn: Flow<Boolean>
     suspend fun getSignInIntentSender(): Either<Throwable, IntentSender>

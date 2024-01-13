@@ -25,7 +25,6 @@
 package com.onirutla.flexchat.core.data.repository
 
 import arrow.core.Either
-import arrow.core.getOrElse
 import arrow.core.raise.either
 import arrow.core.raise.ensure
 import arrow.core.raise.ensureNotNull
@@ -80,10 +79,9 @@ class FirebaseConversationMemberRepository @Inject constructor(
                     }
                     conversationMemberResponse.toConversationMember(messages = messages)
                 }
-        }.onLeft { raise(it) }
-            .getOrNull()
+        }.bind()
 
-        ensure(!conversationMembers.isNullOrEmpty()) {
+        ensure(conversationMembers.isNotEmpty()) {
             raise(NullPointerException("Conversation members should not be empty or null"))
         }
 
@@ -127,22 +125,23 @@ class FirebaseConversationMemberRepository @Inject constructor(
             raise(IllegalArgumentException("Conversation id should not be empty or blank"))
         }
 
-        val conversationMembers = conversationMemberRef
-            .whereEqualTo("conversationId", conversationId)
-            .orderBy("joinedAt", Query.Direction.DESCENDING)
-            .get()
-            .await()
-            .toObjects<ConversationMemberResponse>()
-            .parMap { conversationMemberResponse ->
-                val messages = messageRepository
-                    .getMessageByConversationMemberId(conversationMemberId = conversationMemberResponse.id)
-                    .onLeft { raise(it) }
-                    .getOrElse { listOf() }
-                ensure(messages.isNotEmpty()) {
-                    raise(NullPointerException("Message should not be empty"))
+        val conversationMembers = Either.catch {
+            conversationMemberRef
+                .whereEqualTo("conversationId", conversationId)
+                .orderBy("joinedAt", Query.Direction.DESCENDING)
+                .get()
+                .await()
+                .toObjects<ConversationMemberResponse>()
+                .parMap { conversationMemberResponse ->
+                    val messages = messageRepository
+                        .getMessageByConversationMemberId(conversationMemberId = conversationMemberResponse.id)
+                        .bind()
+                    ensure(messages.isNotEmpty()) {
+                        raise(NullPointerException("Message should not be empty"))
+                    }
+                    conversationMemberResponse.toConversationMember(messages = messages)
                 }
-                conversationMemberResponse.toConversationMember(messages = messages)
-            }
+        }.bind()
         ensure(conversationMembers.isNotEmpty()) {
             raise(NullPointerException("Conversation members should not be empty"))
         }
@@ -161,12 +160,10 @@ class FirebaseConversationMemberRepository @Inject constructor(
             }
         }
 
-        val conversationMembers = conversationMemberRef
-            .whereEqualTo("userId", conversationMemberResponse.userId)
-            .whereEqualTo("conversationId", conversationMemberResponse.conversationId)
-            .get()
-            .await()
-            .toObjects<ConversationMemberResponse>()
+        val conversationMembers = getConversationMembersByUserIdAndConversationId(
+            userId = conversationMemberResponse.userId,
+            conversationId = conversationMemberResponse.conversationId
+        ).bind()
 
         val isConversationMemberExist = conversationMembers.isNotEmpty()
         if (isConversationMemberExist) {
@@ -179,10 +176,32 @@ class FirebaseConversationMemberRepository @Inject constructor(
             val newConversationMemberId = conversationMemberRef.document().id
             val newConversationMember = conversationMemberResponse
                 .copy(id = newConversationMemberId)
-            conversationMemberRef.document(newConversationMemberId)
-                .set(newConversationMember)
-                .await()
+            Either.catch {
+                conversationMemberRef.document(newConversationMemberId)
+                    .set(newConversationMember)
+                    .await()
+            }.bind()
             newConversationMemberId
         }
+    }
+
+    private suspend fun getConversationMembersByUserIdAndConversationId(
+        userId: String,
+        conversationId: String,
+    ): Either<Throwable, List<ConversationMemberResponse>> = either {
+        ensure(userId.isNotEmpty() or userId.isNotBlank()) {
+            IllegalArgumentException("User id should not be null")
+        }
+        ensure(conversationId.isNotEmpty() or conversationId.isNotBlank()) {
+            IllegalArgumentException("Conversation id should not be null")
+        }
+        Either.catch {
+            conversationMemberRef
+                .whereEqualTo("userId", userId)
+                .whereEqualTo("conversationId", conversationId)
+                .get()
+                .await()
+                .toObjects<ConversationMemberResponse>()
+        }.bind()
     }
 }

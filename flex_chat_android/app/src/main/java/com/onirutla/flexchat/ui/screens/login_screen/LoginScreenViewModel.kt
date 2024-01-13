@@ -29,7 +29,7 @@ import android.content.IntentSender
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import arrow.core.Either
-import com.onirutla.flexchat.core.util.isValidEmail
+import com.onirutla.flexchat.core.util.toEmailEither
 import com.onirutla.flexchat.domain.repository.UserRepository
 import com.onirutla.flexchat.domain.util.isValidPassword
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -64,7 +64,7 @@ class LoginScreenViewModel @Inject constructor(
             started = SharingStarted.Eagerly
         )
 
-    private val emailError = email.mapLatest { it.isValidEmail() }
+    private val emailError = email.mapLatest { it.toEmailEither() }
         .onEach { Timber.d("emailError: $it") }
         .shareIn(
             scope = viewModelScope,

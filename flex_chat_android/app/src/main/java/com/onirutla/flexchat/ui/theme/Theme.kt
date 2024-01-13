@@ -33,12 +33,19 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFontFamilyResolver
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.font.createFontFamilyResolver
 import androidx.core.view.WindowCompat
+import com.google.firebase.auth.oAuthProvider
+import kotlinx.coroutines.CoroutineExceptionHandler
+import timber.log.Timber
 
 private val DarkColorScheme = darkColorScheme(
     primary = Purple80,
@@ -84,9 +91,20 @@ fun FlexChatTheme(
         }
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+    val context = LocalContext.current
+    val handler = CoroutineExceptionHandler { _, throwable ->
+        Timber.e(throwable)
+    }
+    CompositionLocalProvider(
+        LocalFontFamilyResolver provides createFontFamilyResolver(
+            context,
+            handler
+        )
+    ) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = Typography,
+            content = content
+        )
+    }
 }

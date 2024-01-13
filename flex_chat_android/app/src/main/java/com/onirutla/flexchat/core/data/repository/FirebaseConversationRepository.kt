@@ -25,10 +25,11 @@
 package com.onirutla.flexchat.core.data.repository
 
 import arrow.core.Either
-import arrow.core.getOrElse
 import arrow.core.raise.either
 import arrow.core.raise.ensure
+import arrow.core.raise.ensureNotNull
 import arrow.fx.coroutines.parMap
+import arrow.fx.coroutines.parMapNotNull
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.toObject
@@ -102,9 +103,9 @@ class FirebaseConversationRepository @Inject constructor(
         val conversationByUserId = conversationMemberRepository
             .observeConversationMemberByUserId(userId)
             .mapLatest { conversationMembers ->
-                conversationMembers.parMap { conversationMember ->
+                conversationMembers.parMapNotNull { conversationMember ->
                     getConversationById(conversationMember.conversationId)
-                        .getOrElse { Conversation() }
+                        .getOrNull()
                 }
             }
 
@@ -128,25 +129,29 @@ class FirebaseConversationRepository @Inject constructor(
     ): Either<Throwable, Conversation> = either {
         val conversationMembers = conversationMemberRepository
             .getConversationMemberByConversationId(conversationId)
-            .onLeft { raise(it) }
-            .getOrNull()
+            .bind()
 
-        ensure(!conversationMembers.isNullOrEmpty()) {
-            raise(NullPointerException("conversation members should not be null or empty"))
+        ensure(conversationMembers.isNotEmpty()) {
+            NullPointerException("conversation members should not be null or empty")
         }
 
-        val result = conversationRef
-            .document(conversationId)
-            .get()
-            .await()
-            .toObject<ConversationResponse>()
-            ?.toConversation(
-                conversationMembers = conversationMembers,
-                messages = conversationMembers.flatMap { it.messages }
-                    .sortedByDescending { it.createdAt }
-            ) ?: Conversation()
+        val conversation = Either.catch {
+            conversationRef
+                .document(conversationId)
+                .get()
+                .await()
+                .toObject<ConversationResponse>()
+                ?.toConversation(
+                    conversationMembers = conversationMembers,
+                    messages = conversationMembers.flatMap { it.messages }
+                        .sortedByDescending { it.createdAt }
+                )
+        }.bind()
+        ensureNotNull(conversation) {
+            NullPointerException("Conversation should not be null")
+        }
 
-        result
+        conversation
     }
 
     override suspend fun createConversation(
@@ -157,10 +162,13 @@ class FirebaseConversationRepository @Inject constructor(
                 raise(IllegalArgumentException("slug should not be empty or blank"))
             }
         }
-        val conversations = conversationRef.whereEqualTo("slug", conversationResponse.slug)
-            .get()
-            .await()
-            .toObjects<ConversationResponse>()
+
+        val conversations = Either.catch {
+            conversationRef.whereEqualTo("slug", conversationResponse.slug)
+                .get()
+                .await()
+                .toObjects<ConversationResponse>()
+        }.bind()
 
         val isConversationExist = conversations.isNotEmpty()
         if (isConversationExist) {
@@ -168,9 +176,11 @@ class FirebaseConversationRepository @Inject constructor(
         } else {
             val newConversationId = conversationRef.document().id
             val newConversation = conversationResponse.copy(id = newConversationId)
-            conversationRef.document(newConversationId)
-                .set(newConversation)
-                .await()
+            Either.catch {
+                conversationRef.document(newConversationId)
+                    .set(newConversation)
+                    .await()
+            }.bind()
             newConversationId
         }
     }

@@ -29,12 +29,15 @@ import arrow.core.raise.either
 import arrow.core.raise.ensure
 import com.onirutla.flexchat.domain.models.error_state.EmailError
 
-fun String.isValidEmail() = either {
+fun String.toEmailEither() = either {
     ensure(isNotBlank() or isNotEmpty()) {
         raise(EmailError.EmptyOrBlank)
     }
-    ensure(PatternsCompat.EMAIL_ADDRESS.matcher(this@isValidEmail).matches()) {
+    ensure(PatternsCompat.EMAIL_ADDRESS.matcher(this@toEmailEither).matches()) {
         raise(EmailError.NotValidEmail)
     }
-    this@isValidEmail
+    this@toEmailEither
 }
+
+fun String.isValidEmail() = (isNotBlank() or isNotEmpty()) and
+    PatternsCompat.EMAIL_ADDRESS.matcher(this).matches()

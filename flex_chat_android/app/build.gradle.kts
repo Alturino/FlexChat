@@ -88,6 +88,7 @@ dependencies {
     debugImplementation(libs.ui.tooling)
     debugImplementation(libs.ui.test.manifest)
     implementation(libs.androidx.constraintlayout.compose)
+    implementation(libs.androidx.ui.text.google.fonts)
 
     // Material
     implementation(libs.androidx.material.icons.extended)
@@ -149,6 +150,19 @@ dependencies {
     implementation(libs.androidx.camera.video)
     implementation(libs.androidx.camera.view)
     implementation(libs.androidx.camera.lifecycle)
+
+    // Media3
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.exoplayer.dash)
+    implementation(libs.androidx.media3.exoplayer.hls)
+    implementation(libs.androidx.media3.exoplayer.rtsp)
+    implementation(libs.androidx.media3.datasource.okhttp)
+    implementation(libs.androidx.media3.session)
+    androidTestImplementation(libs.androidx.media3.test.utils)
+    testImplementation(libs.androidx.media3.test.utils.robolectric)
+
+    // GetStream WebRTC
+    implementation(libs.stream.webrtc.android)
 
     // Accompanist
     implementation(libs.accompanist.permissions)

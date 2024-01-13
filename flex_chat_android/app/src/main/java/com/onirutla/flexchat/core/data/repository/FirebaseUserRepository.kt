@@ -153,15 +153,14 @@ class FirebaseUserRepository @Inject constructor(
                 .await()
                 .pendingIntent
                 .intentSender
-        }.onLeft { Timber.e(it) }
+        }
 
         return signInResult
     }
 
     override suspend fun loginWithGoogle(intent: Intent): Either<Throwable, User> = either {
         val signInCredential = Either.catch { signInClient.getSignInCredentialFromIntent(intent) }
-            .onLeft { raise(it) }
-            .getOrNull()
+            .bind()
 
         ensureNotNull(signInCredential) { raise(NullPointerException("SignInCredential should not be null")) }
         val googleIdToken = signInCredential.googleIdToken
@@ -171,10 +170,11 @@ class FirebaseUserRepository @Inject constructor(
             firebaseAuth.signInWithCredential(googleCredential)
                 .await()
                 .user
-        }.onLeft { raise(it) }
-            .getOrNull()
+        }.bind()
 
-        ensureNotNull(firebaseUser) { raise(NullPointerException("FirebaseUser should not be null")) }
+        ensureNotNull(firebaseUser) {
+            raise(NullPointerException("FirebaseUser should not be null"))
+        }
         val userResponse = with(firebaseUser) {
             UserResponse(
                 id = uid,
@@ -188,14 +188,13 @@ class FirebaseUserRepository @Inject constructor(
             )
         }
 
-        saveUserToFireStore(userResponse)
-            .onLeft { raise(it) }
+        saveUserToFireStore(userResponse).bind()
         userResponse.toUser()
     }
 
     override suspend fun registerWithEmailAndPassword(
         registerArg: RegisterWithUsernameEmailAndPassword,
-    ): Either<Throwable, Unit> = either {
+    ): Either<Throwable, User> = either {
         with(registerArg) {
             ensure(username.isNotBlank() or username.isNotEmpty()) {
                 raise(IllegalArgumentException("Username should not be empty"))
@@ -207,30 +206,32 @@ class FirebaseUserRepository @Inject constructor(
                 raise(IllegalArgumentException("Password should not be empty"))
             }
         }
-        val result = with(registerArg) {
-            Either.catch { firebaseAuth.createUserWithEmailAndPassword(email, password).await() }
-        }.onLeft { raise(it) }
-            .getOrNull()
-        ensureNotNull(result) { raise(NullPointerException("AuthResult should not be null")) }
 
-        val user = result.user
-        ensureNotNull(user) { raise(NullPointerException("FirebaseUser should not be null")) }
-        saveUserToFireStore(
-            with(user) {
-                with(registerArg) {
-                    UserResponse(
-                        id = uid,
-                        username = username,
-                        email = email,
-                        password = password,
-                        phoneNumber = phoneNumber.orEmpty(),
-                        photoProfileUrl = photoUrl.toString(),
-                        status = "",
-                        isOnline = false,
-                    )
-                }
+        val firebaseUser = Either.catch {
+            with(registerArg) {
+                firebaseAuth.createUserWithEmailAndPassword(email, password)
+                    .await()
+                    .user
             }
-        ).onLeft { raise(it) }
+        }.bind()
+        ensureNotNull(firebaseUser) { raise(NullPointerException("FirebaseUser should not be null")) }
+
+        val userResponse = with(firebaseUser) {
+            with(registerArg) {
+                UserResponse(
+                    id = uid,
+                    username = username,
+                    email = email,
+                    password = password,
+                    phoneNumber = phoneNumber.orEmpty(),
+                    photoProfileUrl = photoUrl.toString(),
+                    status = "",
+                    isOnline = false,
+                )
+            }
+        }
+        saveUserToFireStore(userResponse).bind()
+        userResponse.toUser()
     }
 
     override fun getUserByUsername(username: String): Flow<List<User>> = userRef

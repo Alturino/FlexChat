@@ -31,7 +31,7 @@ import androidx.lifecycle.viewModelScope
 import arrow.core.Either
 import arrow.core.raise.either
 import arrow.core.raise.ensure
-import com.onirutla.flexchat.core.util.isValidEmail
+import com.onirutla.flexchat.core.util.toEmailEither
 import com.onirutla.flexchat.domain.models.RegisterWithUsernameEmailAndPassword
 import com.onirutla.flexchat.domain.models.error_state.PasswordError
 import com.onirutla.flexchat.domain.repository.UserRepository
@@ -90,7 +90,7 @@ class RegisterScreenViewModel @Inject constructor(
         )
 
     private val emailError = email
-        .mapLatest { it.isValidEmail() }
+        .mapLatest { it.toEmailEither() }
         .distinctUntilChanged()
         .onEach { Timber.d("emailError: $it") }
         .shareIn(
