@@ -72,11 +72,7 @@ class FirebaseConversationMemberRepository @Inject constructor(
                 .parMap { conversationMemberResponse ->
                     val messages = messageRepository
                         .getMessageByConversationMemberId(conversationMemberId = conversationMemberResponse.id)
-                        .onLeft { raise(it) }
-                        .getOrNull()
-                    ensure(!messages.isNullOrEmpty()) {
-                        raise(NullPointerException("Message should not be empty or"))
-                    }
+                        .bind()
                     conversationMemberResponse.toConversationMember(messages = messages)
                 }
         }.bind()
@@ -98,6 +94,7 @@ class FirebaseConversationMemberRepository @Inject constructor(
                 .parMap { conversationMemberResponse ->
                     val messages = messageRepository
                         .getMessageByConversationMemberId(conversationMemberId = conversationMemberResponse.id)
+                        .onLeft { Timber.e(it) }
                         .onRight { Timber.d("$it") }
                         .fold(ifLeft = { listOf() }, ifRight = { it })
                     conversationMemberResponse.toConversationMember(messages = messages)
@@ -112,6 +109,7 @@ class FirebaseConversationMemberRepository @Inject constructor(
                     .parMap { conversationMemberResponse ->
                         val messages = messageRepository
                             .getMessageByConversationMemberId(conversationMemberId = conversationMemberResponse.id)
+                            .onLeft { Timber.e(it) }
                             .onRight { Timber.d("$it") }
                             .fold(ifLeft = { listOf() }, ifRight = { it })
                         conversationMemberResponse.toConversationMember(messages = messages)

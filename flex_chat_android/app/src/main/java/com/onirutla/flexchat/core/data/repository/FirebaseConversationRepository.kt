@@ -46,6 +46,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.tasks.await
+import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -104,8 +105,15 @@ class FirebaseConversationRepository @Inject constructor(
             .observeConversationMemberByUserId(userId)
             .mapLatest { conversationMembers ->
                 conversationMembers.parMapNotNull { conversationMember ->
-                    getConversationById(conversationMember.conversationId)
+                    val conversation = getConversationById(conversationMember.conversationId)
+                        .onLeft { Timber.e(it) }
+                        .onRight { Timber.d("conversation: $it") }
                         .getOrNull()
+                    conversation?.copy(
+                        conversationName = conversation.conversationName.split(" ")
+                            .filterNot { it == conversationMember.username }
+                            .joinToString("")
+                    )
                 }
             }
 

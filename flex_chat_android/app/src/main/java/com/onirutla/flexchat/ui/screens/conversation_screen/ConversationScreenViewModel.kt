@@ -39,7 +39,17 @@ class ConversationScreenViewModel @Inject constructor(
             conversationRepository.getConversationById(conversationId)
                 .onLeft { Timber.e(it) }
                 .onRight { conversation ->
-                    _state.update { it.copy(conversation = conversation) }
+                    _state.update { state ->
+                        state.copy(
+                            conversation = conversation.copy(
+                                // To not include current user, username on one on one chat
+                                conversationName = conversation.conversationName
+                                    .split(" ")
+                                    .filterNot { it == _state.value.currentUser.username }
+                                    .joinToString("")
+                            )
+                        )
+                    }
                 }
         }
     }
@@ -63,7 +73,7 @@ class ConversationScreenViewModel @Inject constructor(
             launch {
                 _state.mapLatest { it.currentUser.id }
                     .filterNot { it.isEmpty() or it.isBlank() }
-                    .distinctUntilChanged { old, new -> old == new }
+                    .distinctUntilChanged()
                     .flatMapLatest { userId ->
                         conversationMemberRepository.observeConversationMemberByUserId(userId)
                             .mapNotNull { conversationMembers ->
