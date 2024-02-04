@@ -24,10 +24,12 @@
 
 package com.onirutla.flexchat.di
 
+import com.onirutla.flexchat.core.data.repository.FirebaseAttachmentRepository
 import com.onirutla.flexchat.core.data.repository.FirebaseConversationMemberRepository
 import com.onirutla.flexchat.core.data.repository.FirebaseConversationRepository
 import com.onirutla.flexchat.core.data.repository.FirebaseMessageRepository
 import com.onirutla.flexchat.core.data.repository.FirebaseUserRepository
+import com.onirutla.flexchat.domain.repository.AttachmentRepository
 import com.onirutla.flexchat.domain.repository.ConversationMemberRepository
 import com.onirutla.flexchat.domain.repository.ConversationRepository
 import com.onirutla.flexchat.domain.repository.MessageRepository
@@ -57,4 +59,7 @@ abstract class DomainModule {
     @Singleton
     abstract fun bindMessageRepository(messageRepository: FirebaseMessageRepository): MessageRepository
 
+    @Binds
+    @Singleton
+    abstract fun bindAttachmentRepository(attachmentRepository: FirebaseAttachmentRepository): AttachmentRepository
 }

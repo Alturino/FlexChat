@@ -50,7 +50,8 @@ import com.onirutla.flexchat.ui.screens.add_new_conversation_screen.AddNewConver
 import com.onirutla.flexchat.ui.screens.authNavGraph
 import com.onirutla.flexchat.ui.screens.camera_screen.CameraScreen
 import com.onirutla.flexchat.ui.screens.confirmation_send_photo_screen.ConfirmationSendPhotoScreen
-import com.onirutla.flexchat.ui.screens.confirmation_send_photo_screen.ConfirmationSendPhotoScreenState
+import com.onirutla.flexchat.ui.screens.confirmation_send_photo_screen.ConfirmationSendPhotoScreenUiEvent
+import com.onirutla.flexchat.ui.screens.confirmation_send_photo_screen.ConfirmationSendPhotoScreenViewModel
 import com.onirutla.flexchat.ui.screens.conversation_screen.ConversationScreen
 import com.onirutla.flexchat.ui.screens.conversation_screen.ConversationScreenUiEvent
 import com.onirutla.flexchat.ui.screens.conversation_screen.ConversationScreenViewModel
@@ -106,7 +107,7 @@ fun FlexChatNavigation(
                 onUiEvent = {
                     when (it) {
                         is MainScreenUiEvent.OnConversationClick -> {
-                            navController.navigate(route = "${Screens.ConversationScreen.route}/${it.conversation.id}")
+                            navController.navigate(route = "${Screens.Conversation.Default.route}/${it.conversation.id}")
                         }
 
                         MainScreenUiEvent.OnFloatingActionButtonClick -> {
@@ -138,7 +139,7 @@ fun FlexChatNavigation(
                         }
 
                         is AddNewConversationScreenUiEvent.OnNavigateToConversationScreen -> {
-                            navController.navigate(route = "${Screens.ConversationScreen.route}/${it.conversationId}") {
+                            navController.navigate(route = "${Screens.Conversation.Default.route}/${it.conversationId}") {
                                 popUpTo(route = Screens.AddNewConversationScreen.route) {
                                     inclusive = true
                                 }
@@ -181,7 +182,7 @@ fun FlexChatNavigation(
             )
         }
         composable(
-            route = "${Screens.ConversationScreen.route}/{conversationId}",
+            route = "${Screens.Conversation.Default.route}/{conversationId}",
             arguments = listOf(
                 navArgument(name = "conversationId") {
                     type = NavType.StringType
@@ -201,7 +202,7 @@ fun FlexChatNavigation(
                 permission = Manifest.permission.CAMERA,
                 onPermissionResult = {
                     if (it) {
-                        navController.navigate(route = Screens.CameraScreen.route)
+                        navController.navigate(route = Screens.Conversation.CameraScreen.route)
                     }
                 }
             )
@@ -215,8 +216,6 @@ fun FlexChatNavigation(
                             navController.navigateUp()
                         }
 
-                        // TODO: Implement voice and or video chat
-
                         ConversationScreenUiEvent.OnAttachmentClick -> {
                             // TODO: Implement add blob to the chat
                         }
@@ -225,27 +224,42 @@ fun FlexChatNavigation(
                             if (!cameraPermissionState.status.isGranted) {
                                 cameraPermissionState.launchPermissionRequest()
                             } else {
-                                navController.navigate(route = Screens.CameraScreen.route)
+                                navController.navigate(route = Screens.Conversation.CameraScreen.route)
                             }
                         }
 
                         ConversationScreenUiEvent.OnEmojiClick -> {
                             // TODO: Implement emoji to the chat
                         }
+
+                        // TODO: Implement voice and or video chat
+                        ConversationScreenUiEvent.OnCallClick -> {
+
+                        }
+
+                        ConversationScreenUiEvent.OnVideoCallClick -> {
+
+                        }
                     }
                 }
             )
         }
-        composable(route = Screens.CameraScreen.route) {
+        composable(route = Screens.Conversation.CameraScreen.route) {
             CameraScreen(
                 onNavigateUp = { navController.navigateUp() },
                 onNavigateToEditPhotoScreen = {
-                    navController.navigate(route = "${Screens.EditPhotoScreen.route}/${Uri.encode(it.toString())}")
+                    navController.navigate(
+                        route = buildString {
+                            append(Screens.Conversation.EditPhotoScreen.route)
+                            append("/")
+                            append(Uri.encode(it.toString()))
+                        }
+                    )
                 },
             )
         }
         composable(
-            route = "${Screens.EditPhotoScreen.route}/{photoUri}",
+            route = "${Screens.Conversation.EditPhotoScreen.route}/{photoUri}",
             arguments = listOf(
                 navArgument(name = "photoUri", builder = {
                     type = NavType.StringType
@@ -255,14 +269,25 @@ fun FlexChatNavigation(
             ),
             deepLinks = listOf()
         ) { backStackEntry ->
+            val vm: ConfirmationSendPhotoScreenViewModel = hiltViewModel()
+            val state by vm.state.collectAsStateWithLifecycle()
+
             val arg = backStackEntry.arguments?.getString("photoUri", "").orEmpty()
-            val decodedUri = Uri.decode(arg)
-            val photoUri = decodedUri.toUri()
+            LaunchedEffect(key1 = arg, block = {
+                val photoUri = Uri.decode(arg).toUri()
+                vm(photoUri)
+            })
+
             ConfirmationSendPhotoScreen(
-                state = ConfirmationSendPhotoScreenState(
-                    photoUri = photoUri,
-                    ""
-                )
+                state = state,
+                onEvent = vm::onEvent,
+                onUiEvent = {
+                    when (it) {
+                        ConfirmationSendPhotoScreenUiEvent.OnClearClick -> {
+                            navController.navigateUp()
+                        }
+                    }
+                }
             )
         }
     }

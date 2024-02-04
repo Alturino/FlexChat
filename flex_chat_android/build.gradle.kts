@@ -8,5 +8,6 @@ plugins {
     alias(libs.plugins.daggerHiltAndroid) apply false
     alias(libs.plugins.googleDevToolsKsp) apply false
     alias(libs.plugins.firebasePerformanceMonitoring) apply false
+    alias(libs.plugins.secretsGradlePlugin) apply false
 }
 true // Needed to make the Suppress annotation work for the plugins block

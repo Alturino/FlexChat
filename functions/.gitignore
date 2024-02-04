@@ -7,3 +7,6 @@ typings/
 
 # Node.js dependency directory
 node_modules/
+
+.env
+./src/flex-chat-d996e-firebase-adminsdk-haa8u-2ff4478b68.json

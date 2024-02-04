@@ -59,6 +59,7 @@ import timber.log.Timber
 import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 @Composable
@@ -252,7 +253,7 @@ private suspend fun Context.takePicture(
                 val savedUri = outputFileResults.savedUri
                 Timber.d("Success to save image with Uri: $savedUri")
                 if (savedUri != null) {
-                    continuation.resumeWith(Result.success(savedUri))
+                    continuation.resume(savedUri)
                 } else {
                     continuation.resumeWithException(NullPointerException("Saved uri is null"))
                 }

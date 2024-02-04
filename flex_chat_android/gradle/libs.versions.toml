@@ -109,6 +109,7 @@ androidApplication = { id = "com.android.application", version.ref = "agp" }
 daggerHiltAndroid = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 firebaseCrashlytics = { id = "com.google.firebase.crashlytics", version = "2.9.9" }
 firebasePerformanceMonitoring = { id = "com.google.firebase.firebase-perf", version = "1.4.2" }
+secretsGradlePlugin = { id = "com.google.android.libraries.mapsplatform.secrets-gradle-plugin", version = "2.0.1" }
 googleDevToolsKsp = { id = "com.google.devtools.ksp", version.ref = "com-google-devtools-ksp" }
 googleService = { id = "com.google.gms.google-services", version = "4.4.0" }
 kotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }

@@ -14,8 +14,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNot
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -39,36 +41,34 @@ class MainScreenViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            launch {
-                userRepository.currentUser.map { it.id }
-                    .collect { userId -> _state.update { it.copy(userId = userId) } }
-            }
-            launch {
-                userId.flatMapLatest {
-                    conversationRepository.observeConversationByUserId(it)
-                }.collect { conversations ->
+            userRepository.currentUser
+                .map { it.id }
+                .onEach { userId -> _state.update { it.copy(userId = userId) } }
+                .launchIn(viewModelScope)
+            userId.flatMapLatest { conversationRepository.observeConversationByUserId(it) }
+                .map { conversations -> conversations.filterNot { it.conversationMembers.isEmpty() and it.messages.isEmpty() } }
+                .onEach { conversations ->
                     _state.update { it.copy(conversations = conversations) }
                 }
-            }
-            launch {
-                _state.mapLatest { it.conversations }
-                    .filterNot { it.isEmpty() }
-                    .distinctUntilChanged { old, new -> old == new }
-                    .collect { conversations ->
-                        conversations.parMap { conversation ->
-                            firebaseMessaging.subscribeToTopic(conversation.id)
-                                .addOnFailureListener { Timber.e(it) }
-                                .addOnSuccessListener { Timber.d("Subscribed to topic: ${conversation.id}") }
-                                .addOnCompleteListener { Timber.d("Task d") }
-                        }
+                .launchIn(viewModelScope)
+            _state.mapLatest { it.conversations }
+                .filterNot { it.isEmpty() }
+                .distinctUntilChanged()
+                .onEach { conversations ->
+                    conversations.parMap { conversation ->
+                        firebaseMessaging.subscribeToTopic(conversation.id)
+                            .addOnFailureListener { Timber.e(it) }
+                            .addOnSuccessListener { Timber.d("Subscribed to topic: ${conversation.id}") }
+                            .addOnCompleteListener { Timber.d("Complete subscribing to topic: ${conversation.id}") }
                     }
-            }
+                }.launchIn(viewModelScope)
         }
     }
 
     operator fun invoke() {
         viewModelScope.launch {
             val conversations = conversationRepository.getConversationByUserId(_state.value.userId)
+                .onLeft { Timber.e(it) }
                 .onRight { Timber.d("$it") }
                 .fold(ifLeft = { listOf() }, ifRight = { it })
             _state.update { it.copy(conversations = conversations) }

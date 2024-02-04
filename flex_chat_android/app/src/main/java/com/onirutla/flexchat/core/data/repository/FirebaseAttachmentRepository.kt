@@ -4,10 +4,10 @@ import android.net.Uri
 import android.webkit.MimeTypeMap
 import androidx.core.net.toFile
 import arrow.core.Either
-import arrow.core.getOrElse
 import arrow.core.raise.either
 import arrow.core.raise.ensure
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.snapshots
 import com.google.firebase.firestore.toObjects
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.storageMetadata
@@ -16,10 +16,12 @@ import com.onirutla.flexchat.core.data.models.AttachmentResponse
 import com.onirutla.flexchat.domain.models.error_state.CreateAttachmentError
 import com.onirutla.flexchat.domain.models.error_state.GetAttachmentError
 import com.onirutla.flexchat.domain.repository.AttachmentRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
-import timber.log.Timber
+import javax.inject.Inject
 
-class FirebaseAttachmentRepository(
+class FirebaseAttachmentRepository @Inject constructor(
     private val firebaseFirestore: FirebaseFirestore,
     private val firebaseStorage: FirebaseStorage,
 ) : AttachmentRepository {
@@ -57,15 +59,7 @@ class FirebaseAttachmentRepository(
         }
         val childRef = attachmentStorage.child("attachments/${file.name}")
         val uploadTask = childRef.putFile(uri, metadata)
-            .addOnProgressListener {
-                val progress = (100.0 * it.bytesTransferred) / it.totalByteCount
-                Timber.d("Upload file with uri:$uri, with progress: $progress%")
-                onProgress(progress, it.bytesTransferred, it.totalByteCount)
-            }
-            .addOnFailureListener {
-                raise(CreateAttachmentError.FailedToInsertToStorage(it))
-            }
-            .await()
+        uploadTask.pause()
 
         val downloadUrl = childRef.downloadUrl
             .addOnFailureListener {
@@ -107,8 +101,7 @@ class FirebaseAttachmentRepository(
         }
 
         val result = getAttachmentByField("messageId", messageId)
-            .onLeft { raise(it) }
-            .getOrElse { listOf() }
+            .bind()
 
         ensure(result.isNotEmpty()) {
             raise(GetAttachmentError.Empty)
@@ -125,14 +118,20 @@ class FirebaseAttachmentRepository(
         }
 
         val result = getAttachmentByField("conversationId", conversationId)
-            .onLeft { raise(it) }
-            .getOrElse { listOf() }
+            .bind()
 
         ensure(result.isNotEmpty()) {
             raise(GetAttachmentError.Empty)
         }
         result
     }
+
+    override fun observeAttachmentByMessageId(
+        messageId: String,
+    ): Flow<List<AttachmentResponse>> = attachmentRef
+        .whereEqualTo("messageId", messageId)
+        .snapshots()
+        .map { it.toObjects<AttachmentResponse>() }
 
     override suspend fun getAttachmentByUserId(
         userId: String,
@@ -142,8 +141,7 @@ class FirebaseAttachmentRepository(
         }
 
         val result = getAttachmentByField("userId", userId)
-            .onLeft { raise(it) }
-            .getOrElse { listOf() }
+            .bind()
 
         ensure(result.isNotEmpty()) {
             raise(GetAttachmentError.Empty)

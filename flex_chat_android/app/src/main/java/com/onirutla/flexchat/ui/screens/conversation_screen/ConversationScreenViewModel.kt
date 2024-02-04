@@ -3,6 +3,7 @@ package com.onirutla.flexchat.ui.screens.conversation_screen
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.onirutla.flexchat.core.data.models.MessageResponse
+import com.onirutla.flexchat.domain.repository.AttachmentRepository
 import com.onirutla.flexchat.domain.repository.ConversationMemberRepository
 import com.onirutla.flexchat.domain.repository.ConversationRepository
 import com.onirutla.flexchat.domain.repository.MessageRepository

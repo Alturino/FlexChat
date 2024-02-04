@@ -37,11 +37,13 @@ import com.onirutla.flexchat.core.data.FirebaseCollections
 import com.onirutla.flexchat.core.data.models.MessageResponse
 import com.onirutla.flexchat.core.data.models.toMessage
 import com.onirutla.flexchat.domain.models.Message
+import com.onirutla.flexchat.domain.repository.AttachmentRepository
 import com.onirutla.flexchat.domain.repository.MessageRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.tasks.await
 import timber.log.Timber
@@ -52,6 +54,7 @@ import javax.inject.Singleton
 @Singleton
 class FirebaseMessageRepository @Inject constructor(
     private val firebaseFirestore: FirebaseFirestore,
+    private val attachmentRepository: AttachmentRepository,
 ) : MessageRepository {
 
     private val messageRef = firebaseFirestore.collection(FirebaseCollections.MESSAGES)

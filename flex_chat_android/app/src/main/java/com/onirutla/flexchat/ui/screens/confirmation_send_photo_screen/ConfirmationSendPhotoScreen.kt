@@ -31,15 +31,21 @@ import com.onirutla.flexchat.ui.components.CaptionField
 import com.onirutla.flexchat.ui.components.OnImageIconButton
 import com.onirutla.flexchat.ui.theme.FlexChatTheme
 
-data class ConfirmationSendPhotoScreenState(
-    val photoUri: Uri = Uri.EMPTY,
-    val caption: String = "",
-)
+sealed interface ConfirmationSendPhotoScreenUiEvent {
+    data object OnClearClick : ConfirmationSendPhotoScreenUiEvent
+}
+
+sealed interface ConfirmationSendPhotoScreenEvent {
+    data object OnSendClick : ConfirmationSendPhotoScreenEvent
+    data class OnCaptionChange(val caption: String) : ConfirmationSendPhotoScreenEvent
+}
 
 @Composable
 fun ConfirmationSendPhotoScreen(
     modifier: Modifier = Modifier,
     state: ConfirmationSendPhotoScreenState,
+    onEvent: (ConfirmationSendPhotoScreenEvent) -> Unit,
+    onUiEvent: (ConfirmationSendPhotoScreenUiEvent) -> Unit,
 ) {
     Scaffold(modifier = modifier.fillMaxSize()) { contentPadding ->
         ConstraintLayout(
@@ -75,7 +81,7 @@ fun ConfirmationSendPhotoScreen(
                     },
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                OnImageIconButton(onClick = { /*TODO*/ }) {
+                OnImageIconButton(onClick = { onUiEvent(ConfirmationSendPhotoScreenUiEvent.OnClearClick) }) {
                     Icon(imageVector = Icons.Rounded.Clear, contentDescription = null)
                 }
                 // TODO: Implement editing photo like crop, add text, and draw on the image
@@ -101,10 +107,10 @@ fun ConfirmationSendPhotoScreen(
                 CaptionField(
                     modifier = Modifier.fillMaxWidth(fraction = 0.85f),
                     value = state.caption,
-                    onValueChange = {},
-                    onSend = {}
+                    onValueChange = { onEvent(ConfirmationSendPhotoScreenEvent.OnCaptionChange(it)) },
+                    onSend = { onEvent(ConfirmationSendPhotoScreenEvent.OnSendClick) }
                 )
-                FilledTonalIconButton(onClick = { /*TODO*/ }) {
+                FilledTonalIconButton(onClick = { onEvent(ConfirmationSendPhotoScreenEvent.OnSendClick) }) {
                     Icon(
                         imageVector = Icons.Rounded.Send,
                         contentDescription = null
@@ -119,6 +125,10 @@ fun ConfirmationSendPhotoScreen(
 @Composable
 private fun EditPhotoScreenPreview() {
     FlexChatTheme {
-        ConfirmationSendPhotoScreen(state = ConfirmationSendPhotoScreenState(photoUri = Uri.EMPTY))
+        ConfirmationSendPhotoScreen(
+            state = ConfirmationSendPhotoScreenState(photoUri = Uri.EMPTY),
+            onEvent = {},
+            onUiEvent = {}
+        )
     }
 }

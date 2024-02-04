@@ -29,4 +29,6 @@ sealed interface ConversationScreenUiEvent {
     data object OnAttachmentClick: ConversationScreenUiEvent
     data object OnCameraClick: ConversationScreenUiEvent
     data object OnEmojiClick: ConversationScreenUiEvent
+    data object OnCallClick: ConversationScreenUiEvent
+    data object OnVideoCallClick: ConversationScreenUiEvent
 }

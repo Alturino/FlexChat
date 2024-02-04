@@ -7,10 +7,16 @@ plugins {
     alias(libs.plugins.daggerHiltAndroid)
     alias(libs.plugins.googleDevToolsKsp)
     alias(libs.plugins.firebasePerformanceMonitoring)
+    alias(libs.plugins.secretsGradlePlugin)
 }
 
 hilt {
     enableAggregatingTask = true
+}
+
+secrets {
+    defaultPropertiesFileName = "local.properties"
+    propertiesFileName = "secrets.properties"
 }
 
 android {

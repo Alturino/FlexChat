@@ -5,6 +5,7 @@ import arrow.core.Either
 import com.onirutla.flexchat.core.data.models.AttachmentResponse
 import com.onirutla.flexchat.domain.models.error_state.CreateAttachmentError
 import com.onirutla.flexchat.domain.models.error_state.GetAttachmentError
+import kotlinx.coroutines.flow.Flow
 
 interface AttachmentRepository {
     suspend fun getAttachmentByConversationId(conversationId: String): Either<GetAttachmentError, List<AttachmentResponse>>
@@ -15,5 +16,7 @@ interface AttachmentRepository {
         onProgress: (percent: Double, bytesTransferred: Long, totalByteCount: Long) -> Unit,
         uri: Uri
     ): Either<CreateAttachmentError, Unit>
+
+    fun observeAttachmentByMessageId(messageId: String): Flow<List<AttachmentResponse>>
 }
 
