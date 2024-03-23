@@ -1,6 +1,6 @@
 package com.onirutla.flexchat
 
-import com.onirutla.flexchat.ui.util.toLocalTimeString
+import com.onirutla.flexchat.core.util.toLocalTimeString
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
 import org.junit.Assert.assertEquals

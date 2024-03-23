@@ -1,3 +1,19 @@
+/*
+ * Copyright 2024 Ricky Alturino
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.onirutla.flexchat.core
 
 import android.Manifest
@@ -9,18 +25,21 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import arrow.fx.coroutines.autoCloseable
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.onirutla.flexchat.R
-import com.onirutla.flexchat.domain.repository.ConversationRepository
-import com.onirutla.flexchat.domain.repository.UserRepository
+import com.onirutla.flexchat.user.domain.repository.UserRepository
+import com.onirutla.flexchat.core.util.NotificationConstants.NOTIFICATION_CHANNEL_ID
+import com.onirutla.flexchat.core.util.NotificationConstants.NOTIFICATION_CHANNEL_NAME
+import com.onirutla.flexchat.core.util.NotificationConstants.NOTIFICATION_ID
+import com.onirutla.flexchat.conversation.domain.repository.ConversationRepository
 import com.onirutla.flexchat.ui.MainActivity
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -35,12 +54,6 @@ class PushNotificationService : FirebaseMessagingService() {
 
     private val coroutineScope = CoroutineScope(SupervisorJob())
 
-    companion object {
-        private const val NOTIFICATION_ID = 1
-        private const val NOTIFICATION_CHANNEL_ID = "Firebase Channel"
-        private const val NOTIFICATION_CHANNEL_NAME = "Firebase Notification"
-    }
-
     override fun onNewToken(token: String) {
         super.onNewToken(token)
         Timber.d("Refreshed token: $token")
@@ -54,13 +67,11 @@ class PushNotificationService : FirebaseMessagingService() {
 
         val title = message.notification?.title.orEmpty()
         val body = message.notification?.body.orEmpty()
-        coroutineScope.launch {
-            userRepository.currentUser.collect {
-                if (it.id != message.data["userId"]) {
-                    sendNotification(title, body)
-                }
-            }
-        }
+//        userRepository.currentUser.onEach {
+//            if (it.id != message.data["userId"]) {
+//                sendNotification(title, body)
+//            }
+//        }.launchIn(coroutineScope)
     }
 
     private fun sendNotification(title: String, notificationBody: String) {

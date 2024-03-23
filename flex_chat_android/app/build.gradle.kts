@@ -16,7 +16,7 @@ hilt {
 
 secrets {
     defaultPropertiesFileName = "local.properties"
-    propertiesFileName = "secrets.properties"
+    propertiesFileName = "local.properties"
 }
 
 android {
@@ -46,7 +46,7 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -87,6 +87,7 @@ dependencies {
     implementation(libs.ui.tooling.preview)
     implementation(libs.material3)
     testImplementation(libs.junit)
+    implementation(libs.androidx.core.splashscreen)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(platform(libs.compose.bom))

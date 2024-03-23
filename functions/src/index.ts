@@ -1,6 +1,6 @@
 import MessageResponse from "./models/message_response";
 import "dotenv/config";
-import {logger} from "firebase-functions";
+import {logger} from "firebase-functions/v2";
 import {onDocumentCreated} from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
 import {setGlobalOptions} from "firebase-functions/v2/options";
