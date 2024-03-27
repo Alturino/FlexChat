@@ -1,0 +1,10 @@
+.dockerignore
+.env
+.env.example
+.git
+.gitignore
+redis.conf
+Dockerfile
+docker-compose.yml
+redis.conf
+proto

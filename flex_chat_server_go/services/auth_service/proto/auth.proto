@@ -1,0 +1,49 @@
+syntax = "proto3";
+package proto;
+
+import "google/protobuf/duration.proto";
+
+option go_package = "./model";
+
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  string token = 1;
+}
+
+message RegisterRequest {
+  string username = 1;
+  string email = 2;
+  string password = 3;
+}
+
+message User {
+  string id = 1;
+  string username = 2;
+  string email = 3;
+  string password = 4;
+}
+
+message RegisterResponse {
+  User user = 1;
+}
+
+message SessionRequest {
+  string token = 1;
+}
+
+message SessionResponse {
+  string id = 1;
+  string username = 2;
+  string email = 3;
+  google.protobuf.Duration ttl = 4;
+}
+
+service GrpcAuthService {
+  rpc Login(LoginRequest) returns (LoginResponse) {}
+  rpc Register(RegisterRequest) returns (RegisterResponse) {}
+  rpc Session(SessionRequest) returns (SessionResponse) {}
+}
