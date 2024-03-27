@@ -26,9 +26,13 @@ data class Conversation(
     val isGroup: Boolean = false,
     val imageUrl: String = "",
     val conversationMembers: List<ConversationMember> = listOf(),
+    val conversationMemberIds: List<String> = listOf(),
+    val attachments: List<Attachment> = listOf(),
+    val attachmentIds: List<String> = listOf(),
     val messages: List<Message> = conversationMembers.flatMap { it.messages }
         .sortedByDescending { it.createdAt },
-    val latestMessage: Message = messages.maxByOrNull { it.createdAt } ?: Message(),
+//    val latestMessage: Message = messages.maxByOrNull { it.createdAt } ?: Message(),
+    val messageIds: List<String> = listOf(),
     val createdAt: LocalDateTime? = null,
     val deletedAt: LocalDateTime? = null,
 )

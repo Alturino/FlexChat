@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.onirutla.flexchat.ui.screens.conversation_screen
+package com.onirutla.flexchat.conversation.ui.conversation_screen
 
 import com.onirutla.flexchat.conversation.domain.model.Conversation
 import com.onirutla.flexchat.conversation.domain.model.ConversationMember

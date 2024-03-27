@@ -20,13 +20,14 @@ import com.onirutla.flexchat.core.data.model.AttachmentResponse
 import kotlinx.datetime.LocalDateTime
 
 data class Attachment(
-    val id: String = "",
-    val userId: String = "",
-    val conversationId: String = "",
-    val messageId: String = "",
-    val url: String = "",
-    val name: String = "",
-    val mimeType: String = "",
+    val id: String,
+    val userId: String,
+    val conversationId: String,
+    val conversationMemberId: String,
+    val messageId: String,
+    val url: String,
+    val name: String,
+    val mimeType: String,
     val createdAt: LocalDateTime? = null,
     val deletedAt: LocalDateTime? = null,
 )
@@ -35,8 +36,9 @@ internal fun Attachment.toAttachmentResponse() = AttachmentResponse(
     id = id,
     userId = userId,
     conversationId = conversationId,
+    conversationMemberId = conversationMemberId,
     messageId = messageId,
     url = url,
-    name = name,
-    mimeType = mimeType
+    senderName = name,
+    mimeType = mimeType,
 )

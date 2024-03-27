@@ -20,6 +20,7 @@ import android.net.Uri
 import android.webkit.MimeTypeMap
 import androidx.core.net.toFile
 import arrow.core.Either
+import arrow.core.getOrElse
 import arrow.core.raise.either
 import arrow.core.raise.ensure
 import com.google.firebase.firestore.FirebaseFirestore
@@ -27,11 +28,12 @@ import com.google.firebase.firestore.snapshots
 import com.google.firebase.firestore.toObjects
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.storageMetadata
-import com.onirutla.flexchat.core.util.FirebaseCollections
+import com.onirutla.flexchat.conversation.data.model.AttachmentArgs
+import com.onirutla.flexchat.conversation.domain.repository.AttachmentRepository
 import com.onirutla.flexchat.core.data.model.AttachmentResponse
 import com.onirutla.flexchat.core.domain.model.error_state.CreateAttachmentError
 import com.onirutla.flexchat.core.domain.model.error_state.GetAttachmentError
-import com.onirutla.flexchat.conversation.domain.repository.AttachmentRepository
+import com.onirutla.flexchat.core.util.FirebaseCollections
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
@@ -46,11 +48,10 @@ internal class FirebaseAttachmentRepository @Inject constructor(
     private val attachmentStorage = firebaseStorage.reference
 
     override suspend fun createAttachment(
-        attachment: AttachmentResponse,
+        attachmentArgs: AttachmentArgs,
         onProgress: (percent: Double, bytesTransferred: Long, totalByteCount: Long) -> Unit,
-        uri: Uri,
     ): Either<CreateAttachmentError, Unit> = either {
-        with(attachment) {
+        with(attachmentArgs) {
             ensure(userId.isNotEmpty() or userId.isNotBlank()) {
                 CreateAttachmentError.UserIdEmptyOrBlank
             }
@@ -65,37 +66,54 @@ internal class FirebaseAttachmentRepository @Inject constructor(
             }
         }
 
-        val file = uri.toFile()
+        val file = attachmentArgs.uri.toFile()
         val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(file.extension)
         val metadata = storageMetadata {
-            contentType = mimeType
-            setCustomMetadata("userId", attachment.userId)
-            setCustomMetadata("conversationId", attachment.conversationId)
-            setCustomMetadata("messageId", attachment.messageId)
+            with(attachmentArgs) {
+                contentType = mimeType
+                setCustomMetadata("userId", userId)
+                setCustomMetadata("conversationId", conversationId)
+                setCustomMetadata("messageId", messageId)
+            }
         }
         val childRef = attachmentStorage.child("attachments/${file.name}")
-        val uploadTask = childRef.putFile(uri, metadata)
-        uploadTask.pause()
+        Either.catch {
+            childRef.putFile(attachmentArgs.uri, metadata)
+                .addOnProgressListener {
+                    onProgress(
+                        it.bytesTransferred.toDouble() / it.totalByteCount.toDouble(),
+                        it.bytesTransferred,
+                        it.totalByteCount
+                    )
+                }
+                .await()
+        }.onLeft { raise(CreateAttachmentError.FailedToInsertToStorage(it)) }
 
-        val downloadUrl = childRef.downloadUrl
-            .addOnFailureListener {
-                raise(CreateAttachmentError.FailedToRetrieveDownloadUrl(it))
-            }
-            .await()
-            .toString()
+        val downloadUrl = Either.catch {
+            childRef.downloadUrl
+                .await()
+                .toString()
+        }.getOrElse { raise(CreateAttachmentError.FailedToRetrieveDownloadUrl(it)) }
 
-        ensure(downloadUrl.isNotEmpty() or downloadUrl.isNotEmpty()) {
+        ensure(downloadUrl.isNotEmpty() or downloadUrl.isNotBlank()) {
             CreateAttachmentError.DownloadUrlEmptyOrBlank
         }
 
         val attachmentId = attachmentRef.document().id
-        val newAttachment = attachment.copy(
-            id = attachmentId,
-            mimeType = mimeType.orEmpty(),
-            url = downloadUrl
-        )
+        val attachmentResponse = with(attachmentArgs) {
+            AttachmentResponse(
+                id = attachmentId,
+                userId = userId,
+                conversationId = conversationId,
+                conversationMemberId = conversationMemberId,
+                messageId = messageId,
+                mimeType = mimeType.orEmpty(),
+                senderName = senderName,
+                url = downloadUrl,
+            )
+        }
         attachmentRef.document(attachmentId)
-            .set(newAttachment)
+            .set(attachmentResponse)
             .addOnFailureListener { raise(CreateAttachmentError.FailedToInsertToDatabase(it)) }
     }
 
@@ -142,7 +160,7 @@ internal class FirebaseAttachmentRepository @Inject constructor(
         result
     }
 
-    override fun observeAttachmentByMessageId(
+    override fun attachmentByMessageIdFlow(
         messageId: String,
     ): Flow<List<AttachmentResponse>> = attachmentRef
         .whereEqualTo("messageId", messageId)

@@ -16,40 +16,54 @@
 
 package com.onirutla.flexchat.conversation.data.model
 
-import com.google.firebase.firestore.IgnoreExtraProperties
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.ServerTimestamp
 import com.onirutla.flexchat.conversation.domain.model.ConversationMember
 import com.onirutla.flexchat.conversation.domain.model.Message
-import java.time.LocalDateTime
-import java.time.ZoneId
-import java.util.Date
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toKotlinInstant
+import kotlinx.datetime.toLocalDateTime
 
-@IgnoreExtraProperties
 internal data class ConversationMemberResponse(
     val id: String = "",
     val userId: String = "",
     val conversationId: String = "",
     val username: String = "",
+    val email: String = "",
     val photoProfileUrl: String = "",
+    val messageIds: List<String> = listOf(),
     @ServerTimestamp
-    val joinedAt: Date? = null,
+    val joinedAt: Timestamp? = null,
     @ServerTimestamp
-    val leftAt: Date? = null,
+    val updatedAt: Timestamp? = null,
+    val leftAt: Timestamp? = null,
 )
 
-internal fun ConversationMemberResponse.toConversationMember(messages: List<Message>) = ConversationMember(
+internal fun ConversationMemberResponse.toConversationMember(
+    messages: List<Message>,
+) = ConversationMember(
     id = id,
     userId = userId,
     conversationId = conversationId,
+    email = email,
     username = username,
     photoProfileUrl = photoProfileUrl,
     messages = messages,
-    joinedAt = LocalDateTime.ofInstant(
-        joinedAt?.toInstant() ?: Date().toInstant(),
-        ZoneId.systemDefault()
-    ),
-    leftAt = LocalDateTime.ofInstant(
-        leftAt?.toInstant() ?: Date().toInstant(),
-        ZoneId.systemDefault()
-    ),
+    joinedAt = joinedAt?.toDate()
+        ?.toInstant()
+        ?.toKotlinInstant()
+        ?.toLocalDateTime(TimeZone.UTC) ?: Clock.System.now().toLocalDateTime(TimeZone.UTC),
+    updatedAt = updatedAt?.toDate()
+        ?.toInstant()
+        ?.toKotlinInstant()
+        ?.toLocalDateTime(TimeZone.UTC) ?: Clock.System.now().toLocalDateTime(TimeZone.UTC),
+    leftAt = leftAt?.toDate()
+        ?.toInstant()
+        ?.toKotlinInstant()
+        ?.toLocalDateTime(TimeZone.UTC) ?: Clock.System.now().toLocalDateTime(TimeZone.UTC),
 )
+
+internal fun List<ConversationMemberResponse>.toConversationMembers(
+    messages: List<Message>,
+): List<ConversationMember> = map { it.toConversationMember(messages = messages) }

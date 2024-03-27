@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.onirutla.flexchat.ui.components
+package com.onirutla.flexchat.core.ui.components
 
 import android.content.res.Configuration
 import androidx.compose.foundation.clickable
@@ -32,11 +32,11 @@ import coil.compose.SubcomposeAsyncImage
 import com.onirutla.flexchat.conversation.domain.model.Conversation
 import com.onirutla.flexchat.conversation.domain.model.Message
 import com.onirutla.flexchat.core.ui.theme.FlexChatTheme
+import com.onirutla.flexchat.core.ui.util.format
 import com.onirutla.flexchat.core.util.toLocalTimeString
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import java.time.LocalDateTime
 
 @Composable
 fun ConversationItem(
@@ -58,10 +58,10 @@ fun ConversationItem(
             )
         },
         supportingContent = {
-            Text(text = conversation.latestMessage.messageBody)
+//            Text(text = conversation.latestMessage.messageBody)
         },
         trailingContent = {
-            Text(text = conversation.latestMessage.createdAt.toLocalTimeString())
+//            Text(text = conversation.latestMessage.createdAt.format())
         }
     )
 }
@@ -84,7 +84,7 @@ private fun ConversationItemPreview() {
                 imageUrl = "https://www.google.com/#q=errem",
                 isGroup = false,
                 conversationMembers = listOf(),
-                latestMessage = Message(),
+//                latestMessage = Message(),
                 createdAt = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
                 deletedAt = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
             ),

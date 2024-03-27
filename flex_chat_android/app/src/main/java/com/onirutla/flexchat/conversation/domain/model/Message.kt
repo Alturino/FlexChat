@@ -16,8 +16,15 @@
 
 package com.onirutla.flexchat.conversation.domain.model
 
+import com.google.firebase.Timestamp
 import com.onirutla.flexchat.conversation.data.model.MessageResponse
-import java.time.LocalDateTime
+import kotlinx.datetime.Clock
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
+import kotlinx.datetime.toJavaInstant
+import kotlinx.datetime.toLocalDateTime
+import java.util.Date
 
 data class Message(
     val id: String = "",
@@ -27,9 +34,9 @@ data class Message(
     val senderName: String = "",
     val senderPhotoUrl: String = "",
     val messageBody: String = "",
-    val createdAt: LocalDateTime = LocalDateTime.now(),
-    val updatedAt: LocalDateTime = LocalDateTime.now(),
-    val deletedAt: LocalDateTime = LocalDateTime.now(),
+    val createdAt: LocalDateTime? = Clock.System.now().toLocalDateTime(TimeZone.UTC),
+    val updatedAt: LocalDateTime? = Clock.System.now().toLocalDateTime(TimeZone.UTC),
+    val deletedAt: LocalDateTime? = null,
 )
 
 internal fun Message.toMessageResponse() = MessageResponse(
@@ -40,6 +47,10 @@ internal fun Message.toMessageResponse() = MessageResponse(
     senderName = senderName,
     senderPhotoUrl = senderPhotoUrl,
     messageBody = messageBody,
+    createdAt = Timestamp(Date.from(createdAt?.toInstant(TimeZone.UTC)?.toJavaInstant())),
+    updatedAt = Timestamp(Date.from(updatedAt?.toInstant(TimeZone.UTC)?.toJavaInstant())),
+    deletedAt = Timestamp(Date.from(deletedAt?.toInstant(TimeZone.UTC)?.toJavaInstant()))
+
 )
 
 internal fun List<Message>.toMessageResponses() = map { it.toMessageResponse() }

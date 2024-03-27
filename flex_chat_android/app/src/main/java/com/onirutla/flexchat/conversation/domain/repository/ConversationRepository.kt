@@ -23,6 +23,6 @@ import kotlinx.coroutines.flow.Flow
 interface ConversationRepository {
     suspend fun getConversationByUserId(userId: String): Either<Throwable, List<Conversation>>
     suspend fun getConversationById(conversationId: String): Either<Throwable, Conversation>
+    suspend fun conversationByUserIdFlow(userId: String): Flow<List<Conversation>>
     suspend fun createConversation(conversation: Conversation): Either<Throwable, String>
-    suspend fun observeConversationByUserId(userId: String): Flow<List<Conversation>>
 }

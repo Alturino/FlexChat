@@ -18,20 +18,18 @@ package com.onirutla.flexchat.ui.screens.conversation_screen
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.onirutla.flexchat.conversation.data.model.MessageResponse
 import com.onirutla.flexchat.conversation.domain.repository.ConversationMemberRepository
 import com.onirutla.flexchat.conversation.domain.repository.ConversationRepository
 import com.onirutla.flexchat.conversation.domain.repository.MessageRepository
+import com.onirutla.flexchat.conversation.ui.conversation_screen.ConversationScreenState
 import com.onirutla.flexchat.user.domain.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNot
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.mapLatest
-import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -52,21 +50,21 @@ class ConversationScreenViewModel @Inject constructor(
     operator fun invoke(conversationId: String) {
         Timber.d("conversationId: $conversationId")
         viewModelScope.launch {
-            conversationRepository.getConversationById(conversationId)
-                .onLeft { Timber.e(it) }
-                .onRight { conversation ->
-                    _state.update { state ->
-                        state.copy(
-                            conversation = conversation.copy(
-                                // To not include current user, username on one on one chat
-                                conversationName = conversation.conversationName
-                                    .split(" ")
-                                    .filterNot { it == _state.value.currentUser.username }
-                                    .joinToString("")
-                            )
-                        )
-                    }
-                }
+//            conversationRepository.getConversationById(conversationId)
+//                .onLeft { Timber.e(it) }
+//                .onRight { conversation ->
+//                    _state.update { state ->
+//                        state.copy(
+//                            conversation = conversation.copy(
+//                                // To not include current user, username on one on one chat
+//                                conversationName = conversation.conversationName
+//                                    .split(" ")
+//                                    .filterNot { it == _state.value.currentUser.username }
+//                                    .joinToString("")
+//                            )
+//                        )
+//                    }
+//                }
         }
     }
 
@@ -81,24 +79,24 @@ class ConversationScreenViewModel @Inject constructor(
             launch {
                 _state.mapLatest { it.conversation.id }
                     .filterNot { it.isEmpty() or it.isBlank() }
-                    .flatMapLatest { messageRepository.observeMessageByConversationId(it) }
+                    .flatMapLatest { messageRepository.messageByConversationIdFlow(it) }
                     .collect { messages ->
                         _state.update { it.copy(messages = messages) }
                     }
             }
             launch {
-                _state.mapLatest { it.currentUser.id }
-                    .filterNot { it.isEmpty() or it.isBlank() }
-                    .distinctUntilChanged()
-                    .flatMapLatest { userId ->
-                        conversationMemberRepository.observeConversationMemberByUserId(userId)
-                            .mapNotNull { conversationMembers ->
-                                conversationMembers.firstOrNull { it.userId == userId }
-                            }
-                    }
-                    .collect { conversationMember ->
-                        _state.update { it.copy(currentConversationMember = conversationMember) }
-                    }
+//                _state.mapLatest { it.currentUser.id }
+//                    .filterNot { it.isEmpty() or it.isBlank() }
+//                    .distinctUntilChanged()
+//                    .flatMapLatest { userId ->
+//                        conversationMemberRepository.observeConversationMemberByUserId(userId)
+//                            .mapNotNull { conversationMembers ->
+//                                conversationMembers.firstOrNull { it.userId == userId }
+//                            }
+//                    }
+//                    .collect { conversationMember ->
+//                        _state.update { it.copy(currentConversationMember = conversationMember) }
+//                    }
             }
         }
     }

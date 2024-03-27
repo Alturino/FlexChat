@@ -83,11 +83,11 @@ class MainScreenViewModel @Inject constructor(
 
     operator fun invoke() {
         viewModelScope.launch {
-            val conversations = conversationRepository.getConversationByUserId(_state.value.userId)
-                .onLeft { Timber.e(it) }
-                .onRight { Timber.d("$it") }
-                .fold(ifLeft = { listOf() }, ifRight = { it })
-            _state.update { it.copy(conversations = conversations) }
+//            val conversations = conversationRepository.getConversationByUserId(_state.value.userId)
+//                .onLeft { Timber.e(it) }
+//                .onRight { Timber.d("$it") }
+//                .fold(ifLeft = { listOf() }, ifRight = { it })
+//            _state.update { it.copy(conversations = conversations) }
         }
     }
 

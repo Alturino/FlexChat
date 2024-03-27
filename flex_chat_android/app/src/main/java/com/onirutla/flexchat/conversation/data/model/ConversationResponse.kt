@@ -16,6 +16,7 @@
 
 package com.onirutla.flexchat.conversation.data.model
 
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.IgnoreExtraProperties
 import com.google.firebase.firestore.ServerTimestamp
 import com.onirutla.flexchat.conversation.domain.model.Conversation
@@ -24,7 +25,6 @@ import com.onirutla.flexchat.conversation.domain.model.Message
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import java.util.Date
 
 @IgnoreExtraProperties
 internal data class ConversationResponse(
@@ -33,26 +33,32 @@ internal data class ConversationResponse(
     val isGroup: Boolean = false,
     val slug: String = "",
     val imageUrl: String = "",
+    val conversationMemberIds: List<String> = listOf(),
+    val attachmentIds: List<String> = listOf(),
+    val messageIds: List<String> = listOf(),
     @ServerTimestamp
-    val createdAt: Date? = null,
+    val createdAt: Timestamp? = null,
     @ServerTimestamp
-    val updatedAt: Date? = null,
-    @ServerTimestamp
-    val deletedAt: Date? = null,
+    val updatedAt: Timestamp? = null,
+    val deletedAt: Timestamp? = null,
 )
 
-internal fun ConversationResponse.toConversation(
-    conversationMembers: List<ConversationMember>,
-    messages: List<Message>,
+internal suspend inline fun ConversationResponse.toConversation(
+    messages: (ids: List<String>) -> List<Message>,
+    conversationMembers: (ids: List<String>) -> List<ConversationMember>,
 ) = Conversation(
     id = id,
     conversationName = conversationName,
     slug = slug,
     isGroup = isGroup,
     imageUrl = imageUrl,
-    conversationMembers = conversationMembers,
-    messages = messages,
-    latestMessage = messages.maxByOrNull { it.createdAt } ?: Message(),
-    createdAt = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
-    deletedAt = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
+    conversationMembers = conversationMembers(conversationMemberIds),
+    messages = messages(messageIds),
+    createdAt = Clock.System.now().toLocalDateTime(TimeZone.UTC),
+    deletedAt = Clock.System.now().toLocalDateTime(TimeZone.UTC),
 )
+
+internal suspend inline fun List<ConversationResponse>.toConversations(
+    messages: (ids: List<String>) -> List<Message>,
+    conversationMembers: (ids: List<String>) -> List<ConversationMember>,
+) = map { it.toConversation(messages = messages, conversationMembers = conversationMembers) }

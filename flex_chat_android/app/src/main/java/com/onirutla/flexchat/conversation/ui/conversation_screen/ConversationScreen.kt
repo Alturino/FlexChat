@@ -55,14 +55,11 @@ import com.onirutla.flexchat.core.ui.theme.FlexChatTheme
 import com.onirutla.flexchat.ui.components.ChatBubbleItem
 import com.onirutla.flexchat.ui.components.DraftMessageField
 import com.onirutla.flexchat.ui.screens.conversation_screen.ConversationScreenEvent
-import com.onirutla.flexchat.ui.screens.conversation_screen.ConversationScreenState
 import com.onirutla.flexchat.ui.screens.conversation_screen.ConversationScreenUiEvent
 import com.onirutla.flexchat.user.domain.model.User
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import java.time.LocalDateTime
-import java.time.ZoneId
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -166,9 +163,10 @@ private fun ConversationScreenPreview() {
                     imageUrl = "https://duckduckgo.com/?q=persius",
                     isGroup = false,
                     conversationMembers = listOf(),
-                    latestMessage = Message(),
+//                    latestMessage = Message(),
                     createdAt = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
                     deletedAt = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
+                    slug = ""
                 ),
                 messages = listOf(
                     Message(
@@ -179,8 +177,10 @@ private fun ConversationScreenPreview() {
                         senderName = "Robbie Combs",
                         senderPhotoUrl = "https://www.google.com/#q=solet",
                         messageBody = "ius",
-                        createdAt = LocalDateTime.now(ZoneId.systemDefault()),
-                        deletedAt = LocalDateTime.now(ZoneId.systemDefault())
+                        createdAt = Clock.System.now()
+                            .toLocalDateTime(TimeZone.currentSystemDefault()),
+                        deletedAt = Clock.System.now()
+                            .toLocalDateTime(TimeZone.currentSystemDefault())
                     ),
                     Message(
                         id = "asdfasdfasdf",
@@ -190,8 +190,10 @@ private fun ConversationScreenPreview() {
                         senderName = "Robbie Combs",
                         senderPhotoUrl = "https://www.google.com/#q=solet",
                         messageBody = "ius",
-                        createdAt = LocalDateTime.now(ZoneId.systemDefault()),
-                        deletedAt = LocalDateTime.now(ZoneId.systemDefault())
+                        createdAt = Clock.System.now()
+                            .toLocalDateTime(TimeZone.currentSystemDefault()),
+                        deletedAt = Clock.System.now()
+                            .toLocalDateTime(TimeZone.currentSystemDefault())
                     )
                 )
             ),

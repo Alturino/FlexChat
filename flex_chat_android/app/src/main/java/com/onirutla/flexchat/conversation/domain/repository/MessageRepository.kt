@@ -22,12 +22,14 @@ import com.onirutla.flexchat.conversation.domain.model.Message
 import kotlinx.coroutines.flow.Flow
 
 interface MessageRepository {
-    suspend fun getMessageByUserId(userId: String): Either<Throwable, List<Message>>
-    suspend fun getMessageByConversationId(conversationId: String): Either<Throwable, List<Message>>
-    fun observeMessageByConversationId(conversationId: String): Flow<List<Message>>
-    suspend fun getMessageByConversationMemberId(conversationMemberId: String): Either<Throwable, List<Message>>
-    suspend fun createMessage(message: Message): Either<Throwable, String>
-    fun createMessageWithAttachment(message: Message, uri: Uri): Flow<Unit>
-    fun observeMessageByUserId(userId: String): Flow<List<Message>>
+    suspend fun messageByUserId(userId: String): Either<Throwable, List<Message>>
+    suspend fun messageById(id: String): Either<Throwable, Message>
+    suspend fun messageByConversationId(conversationId: String): Either<Throwable, List<Message>>
+    fun messageByConversationIdFlow(conversationId: String): Flow<List<Message>>
+    suspend fun messageByConversationMemberId(conversationMemberId: String): Either<Throwable, List<Message>>
+    suspend fun sendMessage(message: Message): Either<Throwable, String>
+    suspend fun sendMessageWithAttachment(message: Message, uri: Uri): Either<Throwable, Unit>
+    fun messageByUserIdFlow(userId: String): Flow<List<Message>>
     val observeMessage: Flow<List<Message>>
+    suspend fun messageByConversationMemberIdFlow(conversationMemberId: String): Flow<List<Message>>
 }

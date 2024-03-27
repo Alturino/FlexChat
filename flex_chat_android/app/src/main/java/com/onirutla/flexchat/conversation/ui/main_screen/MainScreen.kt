@@ -45,13 +45,11 @@ import androidx.compose.ui.unit.dp
 import com.onirutla.flexchat.R
 import com.onirutla.flexchat.conversation.domain.model.Conversation
 import com.onirutla.flexchat.conversation.domain.model.Message
-import com.onirutla.flexchat.ui.components.ConversationItem
+import com.onirutla.flexchat.core.ui.components.ConversationItem
 import com.onirutla.flexchat.core.ui.theme.FlexChatTheme
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import java.time.LocalDateTime
-import java.time.ZoneId
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -133,7 +131,7 @@ fun MainScreenPreview() {
                         imageUrl = "https://duckduckgo.com/?q=dico",
                         isGroup = false,
                         conversationMembers = listOf(),
-                        latestMessage = Message(),
+//                        latestMessage = Message(),
                         createdAt = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
                         deletedAt = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
                     ),

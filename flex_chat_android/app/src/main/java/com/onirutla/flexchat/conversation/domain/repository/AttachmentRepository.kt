@@ -16,8 +16,8 @@
 
 package com.onirutla.flexchat.conversation.domain.repository
 
-import android.net.Uri
 import arrow.core.Either
+import com.onirutla.flexchat.conversation.data.model.AttachmentArgs
 import com.onirutla.flexchat.core.data.model.AttachmentResponse
 import com.onirutla.flexchat.core.domain.model.error_state.CreateAttachmentError
 import com.onirutla.flexchat.core.domain.model.error_state.GetAttachmentError
@@ -28,11 +28,10 @@ interface AttachmentRepository {
     suspend fun getAttachmentByMessageId(messageId: String): Either<GetAttachmentError, List<AttachmentResponse>>
     suspend fun getAttachmentByUserId(userId: String): Either<GetAttachmentError, List<AttachmentResponse>>
     suspend fun createAttachment(
-        attachment: AttachmentResponse,
+        attachmentArgs: AttachmentArgs,
         onProgress: (percent: Double, bytesTransferred: Long, totalByteCount: Long) -> Unit,
-        uri: Uri
     ): Either<CreateAttachmentError, Unit>
 
-    fun observeAttachmentByMessageId(messageId: String): Flow<List<AttachmentResponse>>
+    fun attachmentByMessageIdFlow(messageId: String): Flow<List<AttachmentResponse>>
 }
 

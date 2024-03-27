@@ -14,13 +14,17 @@
  * limitations under the License.
  */
 
-package com.onirutla.flexchat.conversation.ui.add_new_conversation_screen
+package com.onirutla.flexchat.core.ui.util
 
-import com.onirutla.flexchat.user.domain.model.User
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.toJavaLocalDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+import java.util.Locale
 
-data class AddNewConversationScreenState(
-    val query: String = "",
-    val users: List<User> = listOf(),
-    val currentUser: User? = null,
-    val conversationId: String = ""
-)
+fun LocalDateTime.format(formatStyle: FormatStyle = FormatStyle.FULL): String = DateTimeFormatter
+    .ofLocalizedDateTime(formatStyle)
+    .withLocale(Locale.getDefault())
+    .withZone(ZoneId.systemDefault())
+    .format(this.toJavaLocalDateTime())

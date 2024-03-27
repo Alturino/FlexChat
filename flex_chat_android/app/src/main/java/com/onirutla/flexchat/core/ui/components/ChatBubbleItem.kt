@@ -35,8 +35,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.onirutla.flexchat.conversation.domain.model.Message
 import com.onirutla.flexchat.core.ui.theme.FlexChatTheme
-import com.onirutla.flexchat.core.util.toLocalTimeString
-import java.time.LocalDateTime
+import com.onirutla.flexchat.core.ui.util.format
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 @Composable
 fun ChatBubbleItem(modifier: Modifier = Modifier, message: Message, isMySelf: Boolean) {
@@ -78,7 +80,7 @@ fun ChatBubbleItem(modifier: Modifier = Modifier, message: Message, isMySelf: Bo
                 )
                 Text(
                     modifier = Modifier.align(Alignment.End),
-                    text = message.createdAt.toLocalTimeString(),
+                    text = message.createdAt?.format().orEmpty(),
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Medium
                 )
@@ -100,9 +102,9 @@ private fun ChatBubblePreview() {
                 senderName = "Mauricio Barron",
                 senderPhotoUrl = "https://www.google.com/#q=elitr",
                 messageBody = "lacusfadsfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdffasdfadf",
-                createdAt = LocalDateTime.now(),
-                updatedAt = LocalDateTime.MAX,
-                deletedAt = LocalDateTime.MAX
+                createdAt = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
+                updatedAt = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
+                deletedAt = null
             ),
             isMySelf = true
         )

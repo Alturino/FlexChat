@@ -16,12 +16,14 @@
 
 package com.onirutla.flexchat.conversation.data.model
 
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.IgnoreExtraProperties
 import com.google.firebase.firestore.ServerTimestamp
 import com.onirutla.flexchat.conversation.domain.model.Message
-import java.time.LocalDateTime
-import java.time.ZoneId
-import java.util.Date
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toKotlinInstant
+import kotlinx.datetime.toLocalDateTime
 
 @IgnoreExtraProperties
 internal data class MessageResponse(
@@ -33,11 +35,10 @@ internal data class MessageResponse(
     val senderPhotoUrl: String = "",
     val messageBody: String = "",
     @ServerTimestamp
-    val createdAt: Date? = null,
+    val createdAt: Timestamp? = null,
     @ServerTimestamp
-    val updatedAt: Date? = null,
-    @ServerTimestamp
-    val deletedAt: Date? = null,
+    val updatedAt: Timestamp? = null,
+    val deletedAt: Timestamp? = null,
 )
 
 internal fun MessageResponse.toMessage() = Message(
@@ -48,18 +49,18 @@ internal fun MessageResponse.toMessage() = Message(
     senderName = senderName,
     senderPhotoUrl = senderPhotoUrl,
     messageBody = messageBody,
-    createdAt = LocalDateTime.ofInstant(
-        createdAt?.toInstant() ?: Date().toInstant(),
-        ZoneId.systemDefault()
-    ),
-    updatedAt = LocalDateTime.ofInstant(
-        updatedAt?.toInstant() ?: Date().toInstant(),
-        ZoneId.systemDefault()
-    ),
-    deletedAt = LocalDateTime.ofInstant(
-        deletedAt?.toInstant() ?: Date().toInstant(),
-        ZoneId.systemDefault()
-    ),
+    createdAt = createdAt?.toDate()
+        ?.toInstant()
+        ?.toKotlinInstant()
+        ?.toLocalDateTime(TimeZone.UTC) ?: Clock.System.now().toLocalDateTime(TimeZone.UTC),
+    updatedAt = updatedAt?.toDate()
+        ?.toInstant()
+        ?.toKotlinInstant()
+        ?.toLocalDateTime(TimeZone.UTC) ?: Clock.System.now().toLocalDateTime(TimeZone.UTC),
+    deletedAt = deletedAt?.toDate()
+        ?.toInstant()
+        ?.toKotlinInstant()
+        ?.toLocalDateTime(TimeZone.UTC)
 )
 
 internal fun List<MessageResponse>.toMessages() = map { it.toMessage() }

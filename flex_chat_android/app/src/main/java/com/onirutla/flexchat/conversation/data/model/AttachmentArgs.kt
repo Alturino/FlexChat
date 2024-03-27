@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-package com.onirutla.flexchat.conversation.ui.add_new_conversation_screen
+package com.onirutla.flexchat.conversation.data.model
 
-import com.onirutla.flexchat.user.domain.model.User
+import android.net.Uri
 
-data class AddNewConversationScreenState(
-    val query: String = "",
-    val users: List<User> = listOf(),
-    val currentUser: User? = null,
-    val conversationId: String = ""
+data class AttachmentArgs(
+    val senderName: String,
+    val userId: String,
+    val conversationId: String,
+    val conversationMemberId: String,
+    val messageId: String,
+    val uri: Uri,
 )

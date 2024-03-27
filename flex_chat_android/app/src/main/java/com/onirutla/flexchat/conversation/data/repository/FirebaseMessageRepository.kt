@@ -22,19 +22,22 @@ import arrow.core.raise.either
 import arrow.core.raise.ensure
 import arrow.fx.coroutines.parMap
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.snapshots
+import com.google.firebase.firestore.toObject
 import com.google.firebase.firestore.toObjects
+import com.onirutla.flexchat.conversation.data.model.AttachmentArgs
 import com.onirutla.flexchat.conversation.data.model.MessageResponse
 import com.onirutla.flexchat.conversation.data.model.toMessage
+import com.onirutla.flexchat.conversation.data.model.toMessages
 import com.onirutla.flexchat.conversation.domain.model.Message
+import com.onirutla.flexchat.conversation.domain.model.toMessageResponse
 import com.onirutla.flexchat.conversation.domain.repository.AttachmentRepository
 import com.onirutla.flexchat.conversation.domain.repository.MessageRepository
 import com.onirutla.flexchat.core.util.FirebaseCollections
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.tasks.await
 import timber.log.Timber
 import javax.inject.Inject
@@ -48,117 +51,113 @@ internal class FirebaseMessageRepository @Inject constructor(
 
     private val messageRef = firebaseFirestore.collection(FirebaseCollections.MESSAGES)
 
-    override suspend fun getMessageByUserId(
+    override suspend fun messageByUserId(
         userId: String,
-    ): Either<Throwable, List<Message>> = either {
-        ensure(userId.isNotEmpty() or userId.isNotBlank()) {
-            raise(IllegalArgumentException("User id should not be empty or blank"))
-        }
-        val messages = Either.catch {
-            messageRef.whereEqualTo("userId", userId)
-                .get()
-                .await()
-                .toObjects<MessageResponse>()
-                .parMap { it.toMessage() }
-        }.bind()
-        messages
+    ): Either<Throwable, List<Message>> = Either.catch {
+        messageRef.whereEqualTo("userId", userId)
+            .get()
+            .await()
+            .toObjects<MessageResponse>()
+            .toMessages()
+    }.onLeft { Timber.e(it) }
+
+    override suspend fun messageById(id: String): Either<Throwable, Message> = Either.catch {
+        messageRef.document(id)
+            .get()
+            .await()
+            .toObject<MessageResponse>()!!
+            .toMessage()
     }
 
-    override suspend fun getMessageByConversationId(
+    override suspend fun messageByConversationId(
         conversationId: String,
-    ): Either<Throwable, List<Message>> = either {
-        ensure(conversationId.isNotEmpty() or conversationId.isNotBlank()) {
-            raise(IllegalArgumentException("Conversation id should not be empty or blank"))
-        }
-        val messages = Either.catch {
-            messageRef.whereEqualTo("conversationId", conversationId)
-                .get()
-                .await()
-                .toObjects<MessageResponse>()
-                .parMap { it.toMessage() }
-        }.bind()
-        messages
-    }
+    ): Either<Throwable, List<Message>> = Either.catch {
+        messageRef.whereEqualTo("conversationId", conversationId)
+            .get()
+            .await()
+            .toObjects<MessageResponse>()
+            .toMessages()
+    }.onLeft { Timber.e(it) }
 
-    override val observeMessage: Flow<List<Message>> = messageRef
-        .snapshots()
-        .mapLatest { snapshot ->
-            snapshot.toObjects<MessageResponse>().map { it.toMessage() }
-        }
-
-    override fun observeMessageByConversationId(
+    override fun messageByConversationIdFlow(
         conversationId: String,
     ): Flow<List<Message>> = messageRef.whereEqualTo("conversationId", conversationId)
-        .orderBy("createdAt", Query.Direction.DESCENDING)
         .snapshots()
-        .mapLatest { snapshot ->
-            snapshot.toObjects<MessageResponse>().map { it.toMessage() }
-        }.catch {
-            Timber.e(it)
-        }
+        .map { snapshot ->
+            snapshot.toObjects<MessageResponse>()
+                .parMap { it.toMessage() }
+        }.onEach { Timber.d("messageByConversationIdFlow: $it") }
+        .catch { Timber.e(it) }
 
-    override fun observeMessageByUserId(userId: String): Flow<List<Message>> = messageRef
-        .whereEqualTo("userId", userId)
-        .orderBy("createdAt", Query.Direction.DESCENDING)
-        .snapshots()
-        .mapLatest { snapshot ->
-            snapshot.toObjects<MessageResponse>().map { it.toMessage() }
-        }.catch { Timber.e(it) }
-
-    override suspend fun getMessageByConversationMemberId(
+    override suspend fun messageByConversationMemberId(
         conversationMemberId: String,
-    ): Either<Throwable, List<Message>> = either {
-        ensure(conversationMemberId.isNotEmpty() or conversationMemberId.isNotBlank()) {
-            IllegalArgumentException("Conversation member id should not be empty or blank")
-        }
-        val messages = Either.catch {
-            messageRef
-                .whereEqualTo("conversationMemberId", conversationMemberId)
-                .get()
-                .await()
-                .toObjects<MessageResponse>()
-                .map { it.toMessage() }
-        }.bind()
-        messages
+    ): Either<Throwable, List<Message>> = Either.catch {
+        messageRef.whereEqualTo("conversationMemberId", conversationMemberId)
+            .get()
+            .await()
+            .toObjects<MessageResponse>()
+            .toMessages()
     }
 
-    override suspend fun createMessage(
-        message: Message,
-    ): Either<Throwable, String> = either {
-        with(message) {
-            ensure(userId.isNotEmpty() or userId.isNotBlank()) {
-                IllegalArgumentException("User id should not be empty or blank")
-            }
-            ensure(conversationId.isNotEmpty() or conversationId.isNotBlank()) {
-                IllegalArgumentException("Conversation id should not be empty or blank")
-            }
-            ensure(conversationMemberId.isNotEmpty() or conversationMemberId.isNotBlank()) {
-                IllegalArgumentException("Conversation member id should not be empty or blank")
-            }
-            ensure(messageBody.isNotEmpty() or messageBody.isNotBlank()) {
-                IllegalArgumentException("Message body should not be empty or blank")
-            }
-            ensure(senderName.isNotEmpty() or senderName.isNotBlank()) {
-                IllegalArgumentException("Sender name should not be empty or blank")
-            }
+    override suspend fun messageByConversationMemberIdFlow(
+        conversationMemberId: String,
+    ): Flow<List<Message>> = messageRef.whereEqualTo("conversationMemberId", conversationMemberId)
+        .snapshots()
+        .map { it.toObjects<MessageResponse>().toMessages() }
+
+    override suspend fun sendMessage(message: Message): Either<Throwable, String> = either {
+        ensure(message.messageBody.isNotEmpty() or message.messageBody.isNotBlank()) {
+            IllegalArgumentException("messageBody should not be empty or blank")
         }
-        val messageId = messageRef.document().id
+        ensure(message.senderName.isNotEmpty() or message.messageBody.isNotBlank()) {
+            IllegalArgumentException("senderName should not be empty or blank")
+        }
+        val id = if (message.id.isNotEmpty() or message.id.isNotBlank()) {
+            message.id
+        } else {
+            messageRef.document().id
+        }
         Either.catch {
-            messageRef.document(messageId)
-                .set(message.copy(id = messageId))
+            messageRef.document(id)
+                .set(message.copy(id = id).toMessageResponse())
                 .await()
-        }.bind()
-        messageId
+        }.onLeft { Timber.e(it) }
+            .bind()
+        id
     }
 
-    // TODO: Not yet implemented
-    override fun createMessageWithAttachment(
+    override suspend fun sendMessageWithAttachment(
         message: Message,
         uri: Uri,
-    ): Flow<Unit> = callbackFlow {
-        createMessage(message)
-            .onRight { }
-            .onLeft { }
-
+    ): Either<Throwable, Unit> = either {
+        val messageId = sendMessage(message = message)
+            .onLeft { Timber.e(it) }
+            .bind()
+        attachmentRepository.createAttachment(
+            AttachmentArgs(
+                uri = uri,
+                messageId = messageId,
+                userId = message.userId,
+                conversationId = message.conversationId,
+                conversationMemberId = message.conversationMemberId,
+                senderName = message.senderName
+            ),
+            onProgress = { _, _, _ -> },
+        ).onLeft { Timber.e(it.errorMessage) }
+            .onLeft { raise(Throwable(it.errorMessage)) }
     }
+
+    override fun messageByUserIdFlow(
+        userId: String,
+    ): Flow<List<Message>> = messageRef.whereEqualTo("userId", userId)
+        .snapshots()
+        .map { snapshot -> snapshot.toObjects<MessageResponse>().parMap { it.toMessage() } }
+        .onEach { Timber.d("messageByUserIdFlow: $it") }
+
+    override val observeMessage: Flow<List<Message>>
+        get() = messageRef.snapshots().map {
+            it.toObjects<MessageResponse>()
+                .toMessages()
+        }
+
 }

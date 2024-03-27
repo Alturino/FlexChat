@@ -21,9 +21,9 @@ import com.onirutla.flexchat.conversation.domain.model.ConversationMember
 import kotlinx.coroutines.flow.Flow
 
 interface ConversationMemberRepository {
-    suspend fun getConversationMemberByUserId(userId: String): Either<Throwable, List<ConversationMember>>
-    suspend fun getConversationMemberByConversationId(conversationId: String): Either<Throwable, List<ConversationMember>>
+    suspend fun conversationMemberByUserId(userId: String): Either<Throwable, List<ConversationMember>>
+    suspend fun conversationMemberByConversationId(conversationId: String): Either<Throwable, List<ConversationMember>>
     suspend fun createConversationMember(conversationMember: ConversationMember): Either<Throwable, String>
-    fun observeConversationMemberByUserId(userId: String): Flow<List<ConversationMember>>
-    fun observeConversationMemberByConversationId(conversationId: String): Flow<List<ConversationMember>>
+    fun conversationMemberByUserIdFlow(userId: String): Flow<List<ConversationMember>>
+    fun conversationMemberByConversationIdFlow(conversationId: String): Flow<List<ConversationMember>>
 }

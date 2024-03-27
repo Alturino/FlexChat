@@ -16,18 +16,23 @@
 
 package com.onirutla.flexchat.core.data.model
 
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.IgnoreExtraProperties
-import java.util.Date
+import com.google.firebase.firestore.ServerTimestamp
 
 @IgnoreExtraProperties
 data class AttachmentResponse(
-    val id: String,
+    val id: String = "",
     val userId: String,
     val conversationId: String,
+    val conversationMemberId: String,
     val messageId: String,
     val url: String,
-    val name: String,
+    val senderName: String,
     val mimeType: String,
-    val createdAt: Date? = null,
-    val deletedAt: Date? = null,
+    @ServerTimestamp
+    val createdAt: Timestamp? = null,
+    @ServerTimestamp
+    val updatedAt: Timestamp? = null,
+    val deletedAt: Timestamp? = null,
 )

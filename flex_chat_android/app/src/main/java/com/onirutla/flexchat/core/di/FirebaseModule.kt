@@ -23,6 +23,8 @@ import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.firestoreSettings
+import com.google.firebase.firestore.persistentCacheSettings
 import com.google.firebase.functions.FirebaseFunctions
 import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.storage.FirebaseStorage
@@ -56,24 +58,20 @@ object FirebaseModule {
 
     @Provides
     @Singleton
-    fun provideFirebaseAuth(firebaseApp: FirebaseApp): FirebaseAuth {
-        if (BuildConfig.DEBUG) {
-            return FirebaseAuth.getInstance(firebaseApp).apply {
+    fun provideFirebaseAuth(firebaseApp: FirebaseApp): FirebaseAuth = FirebaseAuth
+        .getInstance(firebaseApp).apply {
+            if (BuildConfig.DEBUG) {
                 useEmulator("10.0.2.2", 9099)
             }
         }
-        return FirebaseAuth.getInstance(firebaseApp)
-    }
 
     @Provides
     @Singleton
-    fun provideFirebaseDatabase(firebaseApp: FirebaseApp): FirebaseDatabase {
-        if (BuildConfig.DEBUG) {
-            return FirebaseDatabase.getInstance(firebaseApp).apply {
+    fun provideFirebaseDatabase(firebaseApp: FirebaseApp): FirebaseDatabase = FirebaseDatabase
+        .getInstance(firebaseApp).apply {
+            if (BuildConfig.DEBUG) {
                 useEmulator("10.0.2.2", 9000)
             }
-        }
-        return FirebaseDatabase.getInstance(firebaseApp)
     }
 
     @Provides
@@ -82,14 +80,16 @@ object FirebaseModule {
 
     @Provides
     @Singleton
-    fun provideFirebaseFirestore(firebaseApp: FirebaseApp): FirebaseFirestore {
-        if (BuildConfig.DEBUG) {
-            return FirebaseFirestore.getInstance(firebaseApp).apply {
+    fun provideFirebaseFirestore(firebaseApp: FirebaseApp): FirebaseFirestore =
+        FirebaseFirestore.getInstance(firebaseApp).apply {
+            persistentCacheIndexManager?.apply { enableIndexAutoCreation() }
+            firestoreSettings = firestoreSettings {
+                setLocalCacheSettings(persistentCacheSettings { setSizeBytes(500 * 1024 * 1024) })
+            }
+            if (BuildConfig.DEBUG) {
                 useEmulator("10.0.2.2", 8080)
             }
         }
-        return FirebaseFirestore.getInstance(firebaseApp)
-    }
 
     @Provides
     @Singleton
@@ -98,24 +98,20 @@ object FirebaseModule {
 
     @Provides
     @Singleton
-    fun provideFirebaseFunction(firebaseApp: FirebaseApp): FirebaseFunctions {
-        if (BuildConfig.DEBUG) {
-            return FirebaseFunctions.getInstance(firebaseApp).apply {
+    fun provideFirebaseFunction(firebaseApp: FirebaseApp): FirebaseFunctions = FirebaseFunctions
+        .getInstance(firebaseApp).apply {
+            if (BuildConfig.DEBUG) {
                 useEmulator("10.0.2.2", 5001)
             }
-        }
-        return FirebaseFunctions.getInstance(firebaseApp)
     }
 
     @Provides
     @Singleton
-    fun provideFirebaseStorage(firebaseApp: FirebaseApp): FirebaseStorage {
-        if (BuildConfig.DEBUG) {
-            return FirebaseStorage.getInstance(firebaseApp).apply {
+    fun provideFirebaseStorage(firebaseApp: FirebaseApp): FirebaseStorage = FirebaseStorage
+        .getInstance(firebaseApp).apply {
+            if (BuildConfig.DEBUG) {
                 useEmulator("10.0.2.2", 9199)
             }
-        }
-        return FirebaseStorage.getInstance(firebaseApp)
     }
 
 }
