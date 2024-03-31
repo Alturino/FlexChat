@@ -18,6 +18,7 @@ package com.onirutla.flexchat.user.domain.model
 
 import com.google.firebase.Timestamp
 import com.onirutla.flexchat.conversation.domain.model.Conversation
+import com.onirutla.flexchat.conversation.domain.model.ConversationMember
 import com.onirutla.flexchat.user.data.model.UserResponse
 import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDateTime
@@ -38,6 +39,8 @@ data class User(
     val isOnline: Boolean? = null,
     val conversationIds: List<String> = listOf(),
     val conversations: List<Conversation> = listOf(),
+    val conversationMemberIds: List<String> = listOf(),
+    val conversationMembers: List<ConversationMember> = listOf(),
     val createdAt: LocalDateTime = Clock.System.now()
         .toLocalDateTime(TimeZone.currentSystemDefault()),
     val updatedAt: LocalDateTime = Clock.System.now()
@@ -54,9 +57,17 @@ internal fun User.toUserResponse(): UserResponse = UserResponse(
     photoProfileUrl = photoProfileUrl,
     status = status,
     isOnline = isOnline ?: false,
-    createdAt = Timestamp(Date.from(createdAt.toInstant(TimeZone.UTC).toJavaInstant())),
-    updatedAt = Timestamp(Date.from(updatedAt.toInstant(TimeZone.UTC).toJavaInstant())),
+    createdAt = Timestamp(
+        Date.from(
+            createdAt.toInstant(TimeZone.currentSystemDefault()).toJavaInstant()
+        )
+    ),
+    updatedAt = Timestamp(
+        Date.from(
+            updatedAt.toInstant(TimeZone.currentSystemDefault()).toJavaInstant()
+        )
+    ),
     deletedAt = if (deletedAt == null) null else Timestamp(
-        Date.from(deletedAt.toInstant(TimeZone.UTC).toJavaInstant())
+        Date.from(deletedAt.toInstant(TimeZone.currentSystemDefault()).toJavaInstant())
     ),
 )

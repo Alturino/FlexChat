@@ -23,20 +23,23 @@ import arrow.core.getOrElse
 import arrow.core.raise.either
 import arrow.core.raise.ensure
 import arrow.core.raise.ensureNotNull
-import arrow.core.recover
 import com.google.android.gms.auth.api.identity.BeginSignInRequest
 import com.google.android.gms.auth.api.identity.SignInClient
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
-import com.onirutla.flexchat.BuildConfig.SIGN_IN_CLIENT_SERVER_CLIENT_ID
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.toObject
 import com.onirutla.flexchat.auth.domain.repository.AuthRepository
-import com.onirutla.flexchat.auth.login.domain.data.LoginRequest
-import com.onirutla.flexchat.auth.register.domain.data.RegisterRequest
+import com.onirutla.flexchat.core.util.FirebaseCollections
+import com.onirutla.flexchat.core.util.FirebaseSecret.SIGN_IN_CLIENT_SERVER_CLIENT_ID
 import com.onirutla.flexchat.core.util.firebaseUserFlow
+import com.onirutla.flexchat.user.data.model.UserResponse
+import com.onirutla.flexchat.user.data.model.toUser
 import com.onirutla.flexchat.user.domain.model.User
+import com.onirutla.flexchat.user.domain.model.toUserResponse
 import com.onirutla.flexchat.user.domain.repository.UserRepository
-import com.onirutla.flexchat.user.util.toUser
+import com.onirutla.flexchat.user.util.toUserResponse
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.filterNotNull
@@ -50,10 +53,13 @@ import javax.inject.Singleton
 
 @Singleton
 internal class FirebaseAuthRepository @Inject constructor(
+    private val firestore: FirebaseFirestore,
     private val userRepository: UserRepository,
     private val firebaseAuth: FirebaseAuth,
     private val signInClient: SignInClient,
 ) : AuthRepository {
+
+    private val userRef = firestore.collection(FirebaseCollections.USERS)
 
     private val _currentUser: Flow<FirebaseUser?> = firebaseAuth.firebaseUserFlow
         .onEach { Timber.d("FirebaseUser: $it") }
@@ -73,36 +79,43 @@ internal class FirebaseAuthRepository @Inject constructor(
         firebaseAuth.signOut()
     }
 
-    override suspend fun login(loginRequest: LoginRequest): Either<Throwable, User> = either {
-        with(loginRequest) {
-            ensure(email.isNotBlank() or email.isNotEmpty()) {
-                raise(IllegalArgumentException("Email should not be blank or empty"))
-            }
-            ensure(password.isNotBlank() or password.isNotEmpty()) {
-                raise(IllegalArgumentException("Password should not be blank or empty"))
-            }
-
-            val firebaseUser = Either.catch {
-                firebaseAuth.signInWithEmailAndPassword(email, password)
-                    .await()
-                    .user
-            }.onLeft {
-                Timber.e(it)
-            }.recover<Throwable, Throwable, FirebaseUser?> {
-                firebaseAuth.createUserWithEmailAndPassword(email, password)
-                    .await()
-                    .user
-            }.onLeft { Timber.e(it) }
-                .bind()
-
-            ensureNotNull(firebaseUser) {
-                raise(NullPointerException("FirebaseUser should not be null"))
-            }
-
-            userRepository.upsertUser(firebaseUser.toUser())
-                .onLeft { firebaseUser.delete().await() }
-                .bind()
+    override suspend fun loginWithEmailAndPassword(
+        email: String,
+        password: String,
+    ): Either<Throwable, User> = either {
+        ensure(email.isNotBlank() or email.isNotEmpty()) {
+            IllegalArgumentException("Email should not be blank or empty")
         }
+        ensure(password.isNotBlank() or password.isNotEmpty()) {
+            IllegalArgumentException("Password should not be blank or empty")
+        }
+
+        val firebaseUser = Either.catch {
+            firebaseAuth.signInWithEmailAndPassword(email, password)
+                .await()
+                .user
+        }.onLeft { Timber.e(it) }
+            .bind()
+
+        ensureNotNull(firebaseUser) {
+            signOut()
+            NullPointerException("FirebaseUser should not be null")
+        }
+
+        Either.catch {
+            firestore.runTransaction {
+                val user = it.get(userRef.document(firebaseUser.uid))
+                    .toObject<UserResponse>()!!
+                    .toUser()
+
+                it.set(
+                    userRef.document(user.id),
+                    user.toUserResponse().copy(username = email, email = email, password = password)
+                )
+                user
+            }.await()
+        }.onLeft { signOut() }
+            .bind()
     }
 
     override suspend fun getSignInIntentSender(): Either<Throwable, IntentSender> {
@@ -139,44 +152,69 @@ internal class FirebaseAuthRepository @Inject constructor(
             firebaseAuth.signInWithCredential(googleCredential)
                 .await()
                 .user
+        }.onLeft {
+            signOut()
+        }.bind()
+
+        ensureNotNull(firebaseUser) {
+            signOut()
+            NullPointerException("FirebaseUser should not be null")
+        }
+
+        Either.catch {
+            firestore.runTransaction {
+                val fromFirestore = it.get(userRef.document(firebaseUser.uid))
+                val isExist = fromFirestore.exists()
+                if (isExist) {
+                    fromFirestore.toObject<UserResponse>()!!
+                        .toUser()
+                } else {
+                    val fromAuth = firebaseUser.toUserResponse()
+                    it.set(
+                        userRef.document(firebaseUser.uid),
+                        fromAuth
+                    )
+                    fromAuth.toUser()
+                }
+            }.await()
+        }.bind()
+    }
+
+    override suspend fun registerWithEmailAndPassword(
+        username: String,
+        email: String,
+        password: String,
+    ): Either<Throwable, User> = either {
+        ensure(username.isNotBlank() or email.isNotEmpty()) {
+            raise(IllegalArgumentException("Username should not be blank or empty"))
+        }
+        ensure(email.isNotBlank() or email.isNotEmpty()) {
+            raise(IllegalArgumentException("Email should not be blank or empty"))
+        }
+        ensure(password.isNotBlank() or password.isNotEmpty()) {
+            raise(IllegalArgumentException("Password should not be blank or empty"))
+        }
+
+        val firebaseUser = Either.catch {
+            firebaseAuth.createUserWithEmailAndPassword(email, password)
+                .await()
+                .user
         }.bind()
 
         ensureNotNull(firebaseUser) {
             raise(NullPointerException("FirebaseUser should not be null"))
         }
 
-        userRepository.upsertUser(firebaseUser.toUser())
-            .bind()
+        Either.catch {
+            firestore.runTransaction {
+                val userResponse = firebaseUser.toUserResponse().copy(
+                    username = username,
+                    email = email,
+                    password = password
+                )
+                it.set(userRef.document(userResponse.id), userResponse)
+                userResponse.toUser()
+            }.await()
+        }.bind()
     }
-
-    override suspend fun registerWithEmailAndPassword(
-        registerRequest: RegisterRequest,
-    ): Either<Throwable, User> = either {
-        with(registerRequest) {
-            ensure(username.isNotBlank() or email.isNotEmpty()) {
-                raise(IllegalArgumentException("Username should not be blank or empty"))
-            }
-            ensure(email.isNotBlank() or email.isNotEmpty()) {
-                raise(IllegalArgumentException("Email should not be blank or empty"))
-            }
-            ensure(password.isNotBlank() or password.isNotEmpty()) {
-                raise(IllegalArgumentException("Password should not be blank or empty"))
-            }
-
-            val firebaseUser = Either.catch {
-                firebaseAuth.signInWithEmailAndPassword(email, password)
-                    .await()
-                    .user
-            }.bind()
-
-            ensureNotNull(firebaseUser) {
-                raise(NullPointerException("FirebaseUser should not be null"))
-            }
-
-            userRepository.upsertUser(firebaseUser.toUser())
-                .bind()
-        }
-    }
-
-
 }

@@ -52,15 +52,17 @@ internal fun MessageResponse.toMessage() = Message(
     createdAt = createdAt?.toDate()
         ?.toInstant()
         ?.toKotlinInstant()
-        ?.toLocalDateTime(TimeZone.UTC) ?: Clock.System.now().toLocalDateTime(TimeZone.UTC),
+        ?.toLocalDateTime(TimeZone.currentSystemDefault()) ?: Clock.System.now()
+            .toLocalDateTime(TimeZone.currentSystemDefault()),
     updatedAt = updatedAt?.toDate()
         ?.toInstant()
         ?.toKotlinInstant()
-        ?.toLocalDateTime(TimeZone.UTC) ?: Clock.System.now().toLocalDateTime(TimeZone.UTC),
+        ?.toLocalDateTime(TimeZone.currentSystemDefault()) ?: Clock.System.now()
+            .toLocalDateTime(TimeZone.currentSystemDefault()),
     deletedAt = deletedAt?.toDate()
         ?.toInstant()
         ?.toKotlinInstant()
-        ?.toLocalDateTime(TimeZone.UTC)
+        ?.toLocalDateTime(TimeZone.currentSystemDefault())
 )
 
 internal fun List<MessageResponse>.toMessages() = map { it.toMessage() }

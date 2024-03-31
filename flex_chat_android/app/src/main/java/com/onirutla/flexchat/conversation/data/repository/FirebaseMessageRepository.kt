@@ -26,6 +26,8 @@ import com.google.firebase.firestore.snapshots
 import com.google.firebase.firestore.toObject
 import com.google.firebase.firestore.toObjects
 import com.onirutla.flexchat.conversation.data.model.AttachmentArgs
+import com.onirutla.flexchat.conversation.data.model.ConversationMemberResponse
+import com.onirutla.flexchat.conversation.data.model.ConversationResponse
 import com.onirutla.flexchat.conversation.data.model.MessageResponse
 import com.onirutla.flexchat.conversation.data.model.toMessage
 import com.onirutla.flexchat.conversation.data.model.toMessages
@@ -45,11 +47,14 @@ import javax.inject.Singleton
 
 @Singleton
 internal class FirebaseMessageRepository @Inject constructor(
-    private val firebaseFirestore: FirebaseFirestore,
+    private val firestore: FirebaseFirestore,
     private val attachmentRepository: AttachmentRepository,
 ) : MessageRepository {
 
-    private val messageRef = firebaseFirestore.collection(FirebaseCollections.MESSAGES)
+    private val messageRef = firestore.collection(FirebaseCollections.MESSAGES)
+    private val conversationMemberRef =
+        firestore.collection(FirebaseCollections.CONVERSATION_MEMBERS)
+    private val conversationRef = firestore.collection(FirebaseCollections.CONVERSATIONS)
 
     override suspend fun messageByUserId(
         userId: String,
@@ -99,40 +104,83 @@ internal class FirebaseMessageRepository @Inject constructor(
             .toMessages()
     }
 
+    override fun messageByUserIdAndConversationIdFlow(userId: String, conversationId: String): Flow<List<Message>> =
+        messageRef.whereEqualTo("userId", userId)
+            .whereEqualTo("conversationId", conversationId)
+            .snapshots()
+            .map { it.toObjects<MessageResponse>().toMessages() }
+            .onEach { Timber.d("messages: $it") }
+            .catch { Timber.e(it) }
+
     override suspend fun messageByConversationMemberIdFlow(
         conversationMemberId: String,
     ): Flow<List<Message>> = messageRef.whereEqualTo("conversationMemberId", conversationMemberId)
         .snapshots()
         .map { it.toObjects<MessageResponse>().toMessages() }
 
-    override suspend fun sendMessage(message: Message): Either<Throwable, String> = either {
-        ensure(message.messageBody.isNotEmpty() or message.messageBody.isNotBlank()) {
-            IllegalArgumentException("messageBody should not be empty or blank")
+    override suspend fun sendMessage(messageRequest: Message): Either<Throwable, Message> = either {
+        with(messageRequest) {
+            ensure(conversationMemberId.isNotEmpty() or conversationMemberId.isNotBlank()) {
+                IllegalArgumentException("conversationMemberId should not be empty or blank")
+            }
+            ensure(conversationId.isNotEmpty() or conversationId.isNotBlank()) {
+                IllegalArgumentException("conversationId should not be empty or blank")
+            }
+            ensure(userId.isNotEmpty() or userId.isNotBlank()) {
+                IllegalArgumentException("userId should not be empty or blank")
+            }
+            ensure(messageBody.isNotEmpty() or messageBody.isNotBlank()) {
+                IllegalArgumentException("messageBody should not be empty or blank")
+            }
+            ensure(senderName.isNotEmpty() or senderName.isNotBlank()) {
+                IllegalArgumentException("senderName should not be empty or blank")
+            }
         }
-        ensure(message.senderName.isNotEmpty() or message.messageBody.isNotBlank()) {
-            IllegalArgumentException("senderName should not be empty or blank")
-        }
-        val id = if (message.id.isNotEmpty() or message.id.isNotBlank()) {
-            message.id
+
+
+        val id = if (messageRequest.id.isNotEmpty() or messageRequest.id.isNotBlank()) {
+            messageRequest.id
         } else {
             messageRef.document().id
         }
+
+        val message = messageRequest.toMessageResponse().copy(id = id)
         Either.catch {
-            messageRef.document(id)
-                .set(message.copy(id = id).toMessageResponse())
-                .await()
+            firestore.runTransaction {
+                val conversationMember = it
+                    .get(conversationMemberRef.document(message.conversationMemberId))
+                    .toObject<ConversationMemberResponse>()!!
+
+                val conversation = it.get(conversationRef.document(message.conversationId))
+                    .toObject<ConversationResponse>()!!
+
+                it.set(messageRef.document(id), message)
+                it.set(
+                    conversationMemberRef.document(conversationMember.id),
+                    conversationMember.copy(
+                        messageIds = conversationMember.messageIds + listOf(
+                            message.id
+                        )
+                    )
+                )
+                it.set(
+                    conversationRef.document(conversation.id),
+                    conversation.copy(messageIds = conversation.messageIds + listOf(message.id))
+                )
+            }.await()
         }.onLeft { Timber.e(it) }
             .bind()
-        id
+        message.toMessage()
     }
 
     override suspend fun sendMessageWithAttachment(
         message: Message,
         uri: Uri,
     ): Either<Throwable, Unit> = either {
-        val messageId = sendMessage(message = message)
+        val messageId = sendMessage(messageRequest = message)
             .onLeft { Timber.e(it) }
             .bind()
+            .id
         attachmentRepository.createAttachment(
             AttachmentArgs(
                 uri = uri,

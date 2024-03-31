@@ -34,8 +34,10 @@ data class Message(
     val senderName: String = "",
     val senderPhotoUrl: String = "",
     val messageBody: String = "",
-    val createdAt: LocalDateTime? = Clock.System.now().toLocalDateTime(TimeZone.UTC),
-    val updatedAt: LocalDateTime? = Clock.System.now().toLocalDateTime(TimeZone.UTC),
+    val createdAt: LocalDateTime = Clock.System.now()
+        .toLocalDateTime(TimeZone.currentSystemDefault()),
+    val updatedAt: LocalDateTime = Clock.System.now()
+        .toLocalDateTime(TimeZone.currentSystemDefault()),
     val deletedAt: LocalDateTime? = null,
 )
 
@@ -47,9 +49,17 @@ internal fun Message.toMessageResponse() = MessageResponse(
     senderName = senderName,
     senderPhotoUrl = senderPhotoUrl,
     messageBody = messageBody,
-    createdAt = Timestamp(Date.from(createdAt?.toInstant(TimeZone.UTC)?.toJavaInstant())),
-    updatedAt = Timestamp(Date.from(updatedAt?.toInstant(TimeZone.UTC)?.toJavaInstant())),
-    deletedAt = Timestamp(Date.from(deletedAt?.toInstant(TimeZone.UTC)?.toJavaInstant()))
+    createdAt = Timestamp(
+        Date.from(createdAt.toInstant(TimeZone.currentSystemDefault()).toJavaInstant())
+    ),
+    updatedAt = Timestamp(
+        Date.from(updatedAt.toInstant(TimeZone.currentSystemDefault()).toJavaInstant())
+    ),
+    deletedAt = if (deletedAt == null) {
+        null
+    } else {
+        Timestamp(Date.from(deletedAt.toInstant(TimeZone.currentSystemDefault()).toJavaInstant()))
+    }
 
 )
 

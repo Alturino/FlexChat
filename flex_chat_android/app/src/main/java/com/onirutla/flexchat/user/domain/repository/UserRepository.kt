@@ -23,5 +23,7 @@ import kotlinx.coroutines.flow.Flow
 interface UserRepository {
     suspend fun upsertUser(user: User): Either<Throwable, User>
     suspend fun getUserById(id: String): Either<Throwable, User>
-    fun getUserByUsername(username: String): Flow<List<User>>
+    suspend fun deleteUser(user: User): Either<Throwable, Void>
+    fun userByUsernameFlow(username: String): Flow<List<User>>
+    suspend fun userByUsername(username: String): Either<Throwable, List<User>>
 }

@@ -23,7 +23,7 @@ import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
 
-fun LocalDateTime.format(formatStyle: FormatStyle = FormatStyle.FULL): String = DateTimeFormatter
+fun LocalDateTime.format(formatStyle: FormatStyle = FormatStyle.SHORT): String = DateTimeFormatter
     .ofLocalizedDateTime(formatStyle)
     .withLocale(Locale.getDefault())
     .withZone(ZoneId.systemDefault())

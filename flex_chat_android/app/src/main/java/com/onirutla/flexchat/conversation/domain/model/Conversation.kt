@@ -17,7 +17,10 @@
 package com.onirutla.flexchat.conversation.domain.model
 
 import com.onirutla.flexchat.conversation.data.model.ConversationResponse
+import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 data class Conversation(
     val id: String = "",
@@ -31,11 +34,14 @@ data class Conversation(
     val attachmentIds: List<String> = listOf(),
     val messages: List<Message> = conversationMembers.flatMap { it.messages }
         .sortedByDescending { it.createdAt },
-//    val latestMessage: Message = messages.maxByOrNull { it.createdAt } ?: Message(),
     val messageIds: List<String> = listOf(),
-    val createdAt: LocalDateTime? = null,
+    val createdAt: LocalDateTime = Clock.System.now()
+        .toLocalDateTime(TimeZone.currentSystemDefault()),
     val deletedAt: LocalDateTime? = null,
-)
+) {
+    val latestMessage: Message
+        get() = messages.maxByOrNull { it.createdAt } ?: Message()
+}
 
 internal fun Conversation.toConversationResponse() = ConversationResponse(
     id = id,
@@ -43,4 +49,5 @@ internal fun Conversation.toConversationResponse() = ConversationResponse(
     isGroup = isGroup,
     imageUrl = imageUrl,
     slug = slug,
+    conversationMemberIds = conversationMemberIds,
 )

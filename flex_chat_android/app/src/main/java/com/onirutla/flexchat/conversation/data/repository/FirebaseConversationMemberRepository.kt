@@ -17,21 +17,26 @@
 package com.onirutla.flexchat.conversation.data.repository
 
 import arrow.core.Either
+import arrow.core.getOrElse
 import arrow.core.raise.either
 import arrow.core.raise.ensure
-import arrow.core.raise.ensureNotNull
 import arrow.fx.coroutines.parMap
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.snapshots
+import com.google.firebase.firestore.toObject
 import com.google.firebase.firestore.toObjects
 import com.onirutla.flexchat.conversation.data.model.ConversationMemberResponse
 import com.onirutla.flexchat.conversation.data.model.toConversationMember
+import com.onirutla.flexchat.conversation.data.model.toConversationMembers
 import com.onirutla.flexchat.conversation.domain.model.ConversationMember
 import com.onirutla.flexchat.conversation.domain.model.Message
 import com.onirutla.flexchat.conversation.domain.repository.ConversationMemberRepository
 import com.onirutla.flexchat.conversation.domain.repository.MessageRepository
 import com.onirutla.flexchat.core.util.FirebaseCollections
+import com.onirutla.flexchat.user.data.model.UserResponse
+import com.onirutla.flexchat.user.domain.repository.UserRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
@@ -41,12 +46,15 @@ import javax.inject.Singleton
 
 @Singleton
 internal class FirebaseConversationMemberRepository @Inject constructor(
-    private val firebaseFirestore: FirebaseFirestore,
+    private val firestore: FirebaseFirestore,
+    private val userRepository: UserRepository,
     private val messageRepository: MessageRepository,
 ) : ConversationMemberRepository {
 
-    private val conversationMemberRef = firebaseFirestore
+    private val conversationMemberRef = firestore
         .collection(FirebaseCollections.CONVERSATION_MEMBERS)
+
+    private val userRef = firestore.collection(FirebaseCollections.USERS)
 
     override suspend fun conversationMemberByUserId(
         userId: String,
@@ -112,6 +120,33 @@ internal class FirebaseConversationMemberRepository @Inject constructor(
         }
     }
 
+    override suspend fun conversationMemberById(
+        id: String,
+    ): Either<Throwable, ConversationMember> = Either.catch {
+        val conversationMemberResponse = conversationMemberRef.document(id)
+            .get()
+            .await()
+            .toObject<ConversationMemberResponse>()!!
+        val messages = conversationMemberResponse.messageIds
+            .map { messageId ->
+                messageRepository.messageById(messageId).getOrElse { throw it }
+            }
+        conversationMemberResponse.toConversationMember(messages = messages)
+    }
+
+    override fun conversationMemberByIdFlow(
+        id: String,
+    ): Flow<List<ConversationMember>> = conversationMemberRef.whereEqualTo("id", id)
+        .snapshots()
+        .map { snapshot ->
+            val conversationMember = snapshot.toObjects<ConversationMemberResponse>()
+            val messageIds = conversationMember.flatMap { it.messageIds }
+            conversationMember.toConversationMembers(
+                messages = messageIds.map { messageId ->
+                    messageRepository.messageById(messageId).getOrElse { throw it }
+                }
+            )
+        }.catch { Timber.e(it) }
 
     override suspend fun conversationMemberByConversationId(
         conversationId: String,
@@ -144,58 +179,51 @@ internal class FirebaseConversationMemberRepository @Inject constructor(
     }
 
     override suspend fun createConversationMember(
-        conversationMember: ConversationMember,
-    ): Either<Throwable, String> = either {
-        with(conversationMember) {
-            ensure(userId.isNotEmpty() or userId.isNotBlank()) {
-                raise(IllegalArgumentException("User id should not be empty or null"))
-            }
-            ensure(conversationId.isNotEmpty() or conversationId.isNotBlank()) {
-                raise(IllegalArgumentException("Conversation id should not be empty or null"))
-            }
-        }
-
-        val conversationMembers = getConversationMembersByUserIdAndConversationId(
-            userId = conversationMember.userId,
-            conversationId = conversationMember.conversationId
-        ).bind()
-
-        val isConversationMemberExist = conversationMembers.isNotEmpty()
-        if (isConversationMemberExist) {
-            val conversationMemberId = conversationMembers.firstOrNull()?.id
-            ensureNotNull(conversationMemberId) {
-                raise(NullPointerException("conversationMemberId should not be null"))
-            }
-            conversationMemberId
-        } else {
-            val newConversationMemberId = conversationMemberRef.document().id
-            val newConversationMember = conversationMember.copy(id = newConversationMemberId)
-            Either.catch {
-                conversationMemberRef.document(newConversationMemberId)
-                    .set(newConversationMember)
-                    .await()
-            }.bind()
-            newConversationMemberId
-        }
-    }
-
-    private suspend fun getConversationMembersByUserIdAndConversationId(
-        userId: String,
         conversationId: String,
-    ): Either<Throwable, List<ConversationMemberResponse>> = either {
+        userId: String,
+    ): Either<Throwable, ConversationMember> = either {
         ensure(userId.isNotEmpty() or userId.isNotBlank()) {
-            IllegalArgumentException("User id should not be null")
+            raise(IllegalArgumentException("User id should not be empty or null"))
         }
         ensure(conversationId.isNotEmpty() or conversationId.isNotBlank()) {
-            IllegalArgumentException("Conversation id should not be null")
+            raise(IllegalArgumentException("Conversation id should not be empty or null"))
         }
-        Either.catch {
-            conversationMemberRef
-                .whereEqualTo("userId", userId)
-                .whereEqualTo("conversationId", conversationId)
-                .get()
-                .await()
-                .toObjects<ConversationMemberResponse>()
-        }.bind()
+
+        val conversationMembers = conversationMemberRef.whereEqualTo("userId", userId)
+            .whereEqualTo("conversationId", conversationId)
+            .get()
+            .await()
+            .toObjects<ConversationMemberResponse>()
+
+        val isConversationMembersExist = conversationMembers.isNotEmpty()
+        if (isConversationMembersExist) {
+            val conversationMember = conversationMembers
+                .first { it.conversationId == conversationId && it.userId == userId }
+            conversationMember.toConversationMember()
+        } else {
+            Either.catch {
+                firestore.runTransaction {
+                    val user = it.get(userRef.document(userId)).toObject<UserResponse>()!!
+
+                    val conversationMemberId = conversationMemberRef.document().id
+                    val conversationMemberResponse = ConversationMemberResponse(
+                        id = conversationMemberId,
+                        userId = userId,
+                        conversationId = conversationId,
+                        email = user.email,
+                        photoProfileUrl = user.photoProfileUrl,
+                        username = user.username,
+                        messageIds = listOf()
+                    )
+
+                    it.set(
+                        conversationMemberRef.document(conversationMemberId),
+                        conversationMemberResponse
+                    )
+                    conversationMemberResponse.toConversationMember()
+                }.await()
+            }.bind()
+        }
     }
+
 }

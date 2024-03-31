@@ -17,14 +17,15 @@
 package com.onirutla.flexchat.core.ui
 
 sealed class Screens(val route: String) {
-    data object MainScreen : Screens("/")
-    data object AddNewConversationScreen : Screens("/conversation")
+    data object AddNewConversationScreen : Screens("/conversation/add")
     data object ProfileScreen : Screens("/users")
 
     sealed class Conversation(val route: String){
-        data object Default: Conversation("/conversation")
-        data object CameraScreen: Conversation("/conversation/camera")
-        data object EditPhotoScreen: Conversation("/conversation/camera/edit")
+        data object Default: Conversation("/conversations")
+        data object ConversationList: Conversation("/conversations/list/")
+        data object AddNewConversationScreen : Conversation("/conversation/add")
+        data object CameraScreen: Conversation("/conversations/camera")
+        data object EditPhotoScreen: Conversation("/conversations/camera/edit")
     }
 
     sealed class Auth(val route: String) {

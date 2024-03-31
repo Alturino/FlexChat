@@ -41,7 +41,7 @@ internal data class ConversationMemberResponse(
 )
 
 internal fun ConversationMemberResponse.toConversationMember(
-    messages: List<Message>,
+    messages: List<Message> = listOf(),
 ) = ConversationMember(
     id = id,
     userId = userId,
@@ -53,15 +53,21 @@ internal fun ConversationMemberResponse.toConversationMember(
     joinedAt = joinedAt?.toDate()
         ?.toInstant()
         ?.toKotlinInstant()
-        ?.toLocalDateTime(TimeZone.UTC) ?: Clock.System.now().toLocalDateTime(TimeZone.UTC),
+        ?.toLocalDateTime(TimeZone.currentSystemDefault()) ?: Clock.System.now().toLocalDateTime(
+        TimeZone.currentSystemDefault()
+    ),
     updatedAt = updatedAt?.toDate()
         ?.toInstant()
         ?.toKotlinInstant()
-        ?.toLocalDateTime(TimeZone.UTC) ?: Clock.System.now().toLocalDateTime(TimeZone.UTC),
+        ?.toLocalDateTime(TimeZone.currentSystemDefault()) ?: Clock.System.now().toLocalDateTime(
+        TimeZone.currentSystemDefault()
+    ),
     leftAt = leftAt?.toDate()
         ?.toInstant()
         ?.toKotlinInstant()
-        ?.toLocalDateTime(TimeZone.UTC) ?: Clock.System.now().toLocalDateTime(TimeZone.UTC),
+        ?.toLocalDateTime(TimeZone.currentSystemDefault()) ?: Clock.System.now().toLocalDateTime(
+        TimeZone.currentSystemDefault()
+    ),
 )
 
 internal fun List<ConversationMemberResponse>.toConversationMembers(

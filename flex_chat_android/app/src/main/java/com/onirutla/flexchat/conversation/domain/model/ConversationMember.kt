@@ -19,7 +19,6 @@ package com.onirutla.flexchat.conversation.domain.model
 import com.google.firebase.Timestamp
 import com.onirutla.flexchat.conversation.data.model.ConversationMemberResponse
 import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
@@ -32,13 +31,15 @@ data class ConversationMember(
     val userId: String = "",
     val conversationId: String = "",
     val username: String = "",
-    val photoProfileUrl: String ="",
-    val email: String= "",
+    val photoProfileUrl: String = "",
+    val email: String = "",
     val messageIds: List<String> = listOf(),
     val messages: List<Message> = listOf(),
-    val joinedAt: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.UTC),
-    val updatedAt: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.UTC),
-    val leftAt: LocalDateTime = Instant.DISTANT_FUTURE.toLocalDateTime(TimeZone.UTC),
+    val joinedAt: LocalDateTime = Clock.System.now()
+        .toLocalDateTime(TimeZone.currentSystemDefault()),
+    val updatedAt: LocalDateTime = Clock.System.now()
+        .toLocalDateTime(TimeZone.currentSystemDefault()),
+    val leftAt: LocalDateTime? = null,
 )
 
 internal fun ConversationMember.toConversationMemberResponse() = ConversationMemberResponse(
@@ -49,9 +50,15 @@ internal fun ConversationMember.toConversationMemberResponse() = ConversationMem
     photoProfileUrl = photoProfileUrl,
     email = email,
     messageIds = messageIds,
-    joinedAt = Timestamp(Date.from(joinedAt.toInstant(TimeZone.UTC).toJavaInstant())),
-    updatedAt = Timestamp(Date.from(updatedAt.toInstant(TimeZone.UTC).toJavaInstant())),
-    leftAt = Timestamp(Date.from(leftAt.toInstant(TimeZone.UTC).toJavaInstant())),
+    joinedAt = Timestamp(
+        Date.from(joinedAt.toInstant(TimeZone.currentSystemDefault()).toJavaInstant())
+    ),
+    updatedAt = Timestamp(
+        Date.from(updatedAt.toInstant(TimeZone.currentSystemDefault()).toJavaInstant())
+    ),
+    leftAt = Timestamp(
+        Date.from(leftAt?.toInstant(TimeZone.currentSystemDefault())?.toJavaInstant())
+    ),
 )
 
 internal fun List<ConversationMember>.toConversationMemberResponses() =

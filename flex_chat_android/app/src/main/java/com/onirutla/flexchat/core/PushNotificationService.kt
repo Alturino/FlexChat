@@ -27,13 +27,13 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import com.onirutla.flexchat.MainActivity
 import com.onirutla.flexchat.R
-import com.onirutla.flexchat.user.domain.repository.UserRepository
+import com.onirutla.flexchat.auth.domain.repository.AuthRepository
+import com.onirutla.flexchat.conversation.domain.repository.ConversationRepository
 import com.onirutla.flexchat.core.util.NotificationConstants.NOTIFICATION_CHANNEL_ID
 import com.onirutla.flexchat.core.util.NotificationConstants.NOTIFICATION_CHANNEL_NAME
 import com.onirutla.flexchat.core.util.NotificationConstants.NOTIFICATION_ID
-import com.onirutla.flexchat.conversation.domain.repository.ConversationRepository
-import com.onirutla.flexchat.ui.MainActivity
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -50,7 +50,7 @@ class PushNotificationService : FirebaseMessagingService() {
     lateinit var conversationRepository: ConversationRepository
 
     @Inject
-    lateinit var userRepository: UserRepository
+    lateinit var authRepository: AuthRepository
 
     private val coroutineScope = CoroutineScope(SupervisorJob())
 
@@ -67,11 +67,13 @@ class PushNotificationService : FirebaseMessagingService() {
 
         val title = message.notification?.title.orEmpty()
         val body = message.notification?.body.orEmpty()
-//        userRepository.currentUser.onEach {
-//            if (it.id != message.data["userId"]) {
-//                sendNotification(title, body)
-//            }
-//        }.launchIn(coroutineScope)
+        authRepository.currentUser
+            .onEach {
+                if (it.id != message.data["userId"]) {
+                    sendNotification(title, body)
+                }
+            }
+            .launchIn(coroutineScope)
     }
 
     private fun sendNotification(title: String, notificationBody: String) {

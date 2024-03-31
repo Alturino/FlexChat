@@ -17,7 +17,6 @@
 package com.onirutla.flexchat.auth.ui
 
 import android.app.Activity
-import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -37,7 +36,6 @@ import com.onirutla.flexchat.auth.register.ui.RegisterScreen
 import com.onirutla.flexchat.auth.register.ui.RegisterScreenUiEvent
 import com.onirutla.flexchat.auth.register.ui.RegisterScreenViewModel
 import com.onirutla.flexchat.core.ui.Screens
-import com.onirutla.flexchat.ui.MainActivity
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
@@ -55,7 +53,6 @@ fun NavGraphBuilder.authNavGraph(navController: NavHostController) {
             val state by vm.state.collectAsStateWithLifecycle()
 
             val coroutineScope = rememberCoroutineScope()
-            val context = LocalContext.current
 
             val signInLauncher = rememberLauncherForActivityResult(
                 contract = ActivityResultContracts.StartIntentSenderForResult()
@@ -98,12 +95,10 @@ fun NavGraphBuilder.authNavGraph(navController: NavHostController) {
                         }
 
                         LoginUiEvent.NavigateToMain -> {
-                            Intent(context, MainActivity::class.java).apply {
-                                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            }.also {
-                                context.startActivity(it)
+                            navController.navigate(route = Screens.Conversation.Default.route) {
+                                popUpTo(route = Screens.Auth.RegisterScreen.route) {
+                                    inclusive = true
+                                }
                             }
                         }
                     }
@@ -161,12 +156,10 @@ fun NavGraphBuilder.authNavGraph(navController: NavHostController) {
                         }
 
                         RegisterScreenUiEvent.NavigateToMainScreen -> {
-                            Intent(context, MainActivity::class.java).apply {
-                                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            }.also {
-                                context.startActivity(it)
+                            navController.navigate(route = Screens.Conversation.Default.route) {
+                                popUpTo(route = Screens.Auth.RegisterScreen.route) {
+                                    inclusive = true
+                                }
                             }
                         }
                     }

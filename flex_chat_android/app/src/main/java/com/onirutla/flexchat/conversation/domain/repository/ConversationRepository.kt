@@ -21,8 +21,8 @@ import com.onirutla.flexchat.conversation.domain.model.Conversation
 import kotlinx.coroutines.flow.Flow
 
 interface ConversationRepository {
-    suspend fun getConversationByUserId(userId: String): Either<Throwable, List<Conversation>>
+    suspend fun conversationByUserId(userId: String): Either<Throwable, List<Conversation>>
     suspend fun getConversationById(conversationId: String): Either<Throwable, Conversation>
-    suspend fun conversationByUserIdFlow(userId: String): Flow<List<Conversation>>
-    suspend fun createConversation(conversation: Conversation): Either<Throwable, String>
+    fun conversationByUserIdFlow(userId: String): Flow<List<Conversation>>
+    suspend fun createConversation(userIds: List<String>): Either<Throwable, Conversation>
 }

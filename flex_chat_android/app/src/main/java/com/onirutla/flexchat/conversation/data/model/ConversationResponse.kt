@@ -17,7 +17,6 @@
 package com.onirutla.flexchat.conversation.data.model
 
 import com.google.firebase.Timestamp
-import com.google.firebase.firestore.IgnoreExtraProperties
 import com.google.firebase.firestore.ServerTimestamp
 import com.onirutla.flexchat.conversation.domain.model.Conversation
 import com.onirutla.flexchat.conversation.domain.model.ConversationMember
@@ -26,7 +25,6 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
-@IgnoreExtraProperties
 internal data class ConversationResponse(
     val id: String = "",
     val conversationName: String = "",
@@ -34,6 +32,7 @@ internal data class ConversationResponse(
     val slug: String = "",
     val imageUrl: String = "",
     val conversationMemberIds: List<String> = listOf(),
+    val userIds: List<String> = listOf(),
     val attachmentIds: List<String> = listOf(),
     val messageIds: List<String> = listOf(),
     @ServerTimestamp
@@ -43,22 +42,23 @@ internal data class ConversationResponse(
     val deletedAt: Timestamp? = null,
 )
 
-internal suspend inline fun ConversationResponse.toConversation(
-    messages: (ids: List<String>) -> List<Message>,
-    conversationMembers: (ids: List<String>) -> List<ConversationMember>,
+internal fun ConversationResponse.toConversation(
+    messages: List<Message> = listOf(),
+    conversationMembers: List<ConversationMember> = listOf(),
 ) = Conversation(
     id = id,
     conversationName = conversationName,
     slug = slug,
     isGroup = isGroup,
     imageUrl = imageUrl,
-    conversationMembers = conversationMembers(conversationMemberIds),
-    messages = messages(messageIds),
-    createdAt = Clock.System.now().toLocalDateTime(TimeZone.UTC),
-    deletedAt = Clock.System.now().toLocalDateTime(TimeZone.UTC),
+    conversationMembers = conversationMembers,
+    conversationMemberIds = conversationMemberIds,
+    messages = messages,
+    createdAt = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
+    deletedAt = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
 )
 
-internal suspend inline fun List<ConversationResponse>.toConversations(
-    messages: (ids: List<String>) -> List<Message>,
-    conversationMembers: (ids: List<String>) -> List<ConversationMember>,
+internal inline fun List<ConversationResponse>.toConversations(
+    messages: List<Message> = listOf(),
+    conversationMembers: List<ConversationMember> = listOf(),
 ) = map { it.toConversation(messages = messages, conversationMembers = conversationMembers) }

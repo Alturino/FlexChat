@@ -18,6 +18,7 @@ package com.onirutla.flexchat.auth.di
 
 import com.google.android.gms.auth.api.identity.SignInClient
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.onirutla.flexchat.auth.data.repository.FirebaseAuthRepository
 import com.onirutla.flexchat.user.domain.repository.UserRepository
 import dagger.Module
@@ -32,12 +33,14 @@ internal object AuthModule {
     @Provides
     @Singleton
     fun provideAuthRepository(
-        userRepository: UserRepository,
         firebaseAuth: FirebaseAuth,
+        firestore: FirebaseFirestore,
         signInClient: SignInClient,
+        userRepository: UserRepository,
     ): FirebaseAuthRepository = FirebaseAuthRepository(
-        userRepository = userRepository,
         firebaseAuth = firebaseAuth,
-        signInClient = signInClient
+        firestore = firestore,
+        signInClient = signInClient,
+        userRepository = userRepository,
     )
 }

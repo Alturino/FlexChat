@@ -27,9 +27,10 @@ interface MessageRepository {
     suspend fun messageByConversationId(conversationId: String): Either<Throwable, List<Message>>
     fun messageByConversationIdFlow(conversationId: String): Flow<List<Message>>
     suspend fun messageByConversationMemberId(conversationMemberId: String): Either<Throwable, List<Message>>
-    suspend fun sendMessage(message: Message): Either<Throwable, String>
+    suspend fun sendMessage(messageRequest: Message): Either<Throwable, Message>
     suspend fun sendMessageWithAttachment(message: Message, uri: Uri): Either<Throwable, Unit>
     fun messageByUserIdFlow(userId: String): Flow<List<Message>>
     val observeMessage: Flow<List<Message>>
     suspend fun messageByConversationMemberIdFlow(conversationMemberId: String): Flow<List<Message>>
+    fun messageByUserIdAndConversationIdFlow(userId: String, conversationId: String): Flow<List<Message>>
 }

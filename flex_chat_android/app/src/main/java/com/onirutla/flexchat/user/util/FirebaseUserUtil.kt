@@ -27,6 +27,7 @@ fun FirebaseUser.toUser(conversationIds: List<String> = listOf()) = User(
     id = uid,
     email = email.orEmpty(),
     conversationIds = conversationIds,
+    password = "",
     isOnline = false,
     createdAt = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
     username = displayName.orEmpty(),
@@ -37,11 +38,12 @@ fun FirebaseUser.toUser(conversationIds: List<String> = listOf()) = User(
 
 internal fun FirebaseUser.toUserResponse(): UserResponse = UserResponse(
     id = uid,
-    email = email.orEmpty(),
-    isOnline = false,
-    createdAt = null,
     username = displayName.orEmpty(),
+    email = email.orEmpty(),
+    password = "",
     phoneNumber = phoneNumber.orEmpty(),
     photoProfileUrl = photoUrl.toString(),
-    status = "Welcome to FlexChat"
+    conversationIds = listOf(),
+    status = "Welcome to FlexChat",
+    isOnline = false,
 )

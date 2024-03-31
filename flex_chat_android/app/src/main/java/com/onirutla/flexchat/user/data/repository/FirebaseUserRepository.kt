@@ -17,10 +17,14 @@
 package com.onirutla.flexchat.user.data.repository
 
 import arrow.core.Either
+import arrow.core.raise.either
+import arrow.core.raise.ensure
 import arrow.fx.coroutines.parMap
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.snapshots
 import com.google.firebase.firestore.toObject
+import com.google.firebase.firestore.toObjects
 import com.onirutla.flexchat.core.util.FirebaseCollections
 import com.onirutla.flexchat.user.data.model.UserResponse
 import com.onirutla.flexchat.user.data.model.toUser
@@ -31,7 +35,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
+import kotlinx.datetime.toJavaInstant
+import kotlinx.datetime.toLocalDateTime
 import timber.log.Timber
+import java.util.Date
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -42,25 +52,81 @@ internal class FirebaseUserRepository @Inject constructor(
 
     private val userRef = firestore.collection(FirebaseCollections.USERS)
 
-    override suspend fun upsertUser(user: User): Either<Throwable, User> = Either.catch {
+    override suspend fun upsertUser(user: User): Either<Throwable, User> = either {
         val userResponse = user.toUserResponse()
-        userRef.document(user.id)
-            .set(userResponse)
-            .await()
-        user
-    }
+
+        Either.catch {
+            userRef.document(userResponse.id)
+                .set(userResponse.copy(updatedAt = null))
+                .await()
+        }.onLeft { Timber.e(it) }
+            .bind()
+
+        userResponse.toUser()
+    }.onLeft { Timber.e(it) }
 
     override suspend fun getUserById(id: String): Either<Throwable, User> = Either.catch {
-        userRef.document(id)
+        val user = userRef.document(id)
             .get()
             .await()
-            .toObject<User>()!!
-    }
+            .toObject<UserResponse>()
+            ?.toUser()!!
 
-    override fun getUserByUsername(username: String): Flow<List<User>> = userRef
+        if (user.deletedAt != null) {
+            throw IllegalStateException("User is not exist")
+        } else {
+            user
+        }
+    }.onLeft { Timber.e(it) }
+
+    override suspend fun deleteUser(user: User): Either<Throwable, Void> = either {
+        val userResponse = user.toUserResponse()
+
+        val isExist = Either.catch {
+            userRef.document(userResponse.id)
+                .get()
+                .await()
+                .exists()
+        }.bind()
+
+        ensure(isExist) {
+            IllegalStateException("User is not exist")
+        }
+
+        ensure(userResponse.deletedAt == null) {
+            IllegalStateException("User is already")
+        }
+
+        val now = Clock.System.now()
+            .toLocalDateTime(TimeZone.currentSystemDefault())
+            .toInstant(TimeZone.currentSystemDefault())
+            .toJavaInstant()
+
+        Either.catch {
+            userRef.document(userResponse.id)
+                .set(userResponse.copy(deletedAt = Timestamp(Date.from(now))))
+                .await()
+        }.bind()
+    }.onLeft { Timber.e(it) }
+
+    override suspend fun userByUsername(
+        username: String,
+    ): Either<Throwable, List<User>> = Either.catch {
+        userRef.orderBy("username")
+            .startAt(username)
+            .endAt("$username\uf8ff")
+            .whereEqualTo("deletedAt", null)
+            .get()
+            .await()
+            .toObjects<UserResponse>()
+            .parMap { it.toUser() }
+    }.onLeft { Timber.e(it) }
+
+    override fun userByUsernameFlow(username: String): Flow<List<User>> = userRef
         .orderBy("username")
         .startAt(username)
         .endAt("$username\uf8ff")
+        .whereEqualTo("deletedAt", null)
         .snapshots()
         .map { snapshot -> snapshot.parMap { it.toObject<UserResponse>().toUser() } }
         .catch { Timber.e(it) }

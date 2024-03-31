@@ -19,6 +19,8 @@ package com.onirutla.flexchat.user.data.model
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.IgnoreExtraProperties
 import com.google.firebase.firestore.ServerTimestamp
+import com.onirutla.flexchat.conversation.domain.model.Conversation
+import com.onirutla.flexchat.conversation.domain.model.ConversationMember
 import com.onirutla.flexchat.user.domain.model.User
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toKotlinInstant
@@ -33,6 +35,8 @@ internal data class UserResponse(
     val password: String = "",
     val phoneNumber: String = "",
     val photoProfileUrl: String = "",
+    val conversationIds: List<String> = listOf(),
+    val conversationMemberIds: List<String> = listOf(),
     val status: String = "",
     val isOnline: Boolean = false,
     @ServerTimestamp
@@ -42,19 +46,31 @@ internal data class UserResponse(
     val deletedAt: Timestamp? = null,
 )
 
-internal fun UserResponse.toUser(conversationIds: List<String> = listOf()) = User(
+internal fun UserResponse.toUser(
+    conversations: List<Conversation> = listOf(),
+    conversationMembers: List<ConversationMember> = listOf(),
+) = User(
     id = id,
     username = username,
     email = email,
     photoProfileUrl = photoProfileUrl,
     phoneNumber = phoneNumber,
+    password = password,
     status = status,
     isOnline = isOnline,
     conversationIds = conversationIds,
-    createdAt = createdAt?.toDate()?.toInstant()?.toKotlinInstant()?.toLocalDateTime(TimeZone.UTC)
-        ?: Instant.now().toKotlinInstant().toLocalDateTime(TimeZone.UTC),
-    updatedAt = updatedAt?.toDate()?.toInstant()?.toKotlinInstant()?.toLocalDateTime(TimeZone.UTC)
-        ?: Instant.now().toKotlinInstant().toLocalDateTime(TimeZone.UTC),
-    deletedAt = if (deletedAt == null) null else deletedAt.toDate().toInstant()?.toKotlinInstant()
-        ?.toLocalDateTime(TimeZone.UTC)
+    conversations = conversations,
+    conversationMemberIds = conversationMemberIds,
+    conversationMembers = conversationMembers,
+    createdAt = createdAt?.toDate()?.toInstant()
+        ?.toKotlinInstant()
+        ?.toLocalDateTime(TimeZone.currentSystemDefault())
+        ?: Instant.now().toKotlinInstant().toLocalDateTime(TimeZone.currentSystemDefault()),
+    updatedAt = updatedAt?.toDate()?.toInstant()
+        ?.toKotlinInstant()
+        ?.toLocalDateTime(TimeZone.currentSystemDefault())
+        ?: Instant.now().toKotlinInstant().toLocalDateTime(TimeZone.currentSystemDefault()),
+    deletedAt = if (deletedAt == null) null else deletedAt.toDate().toInstant()
+        ?.toKotlinInstant()
+        ?.toLocalDateTime(TimeZone.currentSystemDefault())
 )
