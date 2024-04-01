@@ -16,94 +16,29 @@
 
 package com.onirutla.flexchat.core.webrtc
 
+import com.onirutla.flexchat.core.webrtc.util.stringify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import org.webrtc.AudioSource
-import org.webrtc.AudioTrack
 import org.webrtc.CandidatePairChangeEvent
 import org.webrtc.DataChannel
-import org.webrtc.DefaultVideoDecoderFactory
-import org.webrtc.DefaultVideoEncoderFactory
-import org.webrtc.EglBase
 import org.webrtc.IceCandidate
 import org.webrtc.IceCandidateErrorEvent
 import org.webrtc.MediaConstraints
 import org.webrtc.MediaStream
 import org.webrtc.PeerConnection
-import org.webrtc.PeerConnection.RTCConfiguration
-import org.webrtc.PeerConnectionFactory
+import org.webrtc.RTCStatsReport
 import org.webrtc.RtpReceiver
 import org.webrtc.RtpTransceiver
 import org.webrtc.SessionDescription
-import org.webrtc.VideoSource
-import org.webrtc.VideoTrack
 import timber.log.Timber
-import javax.inject.Inject
-
-enum class StreamPeerType {
-    Publisher,
-    Subscriber,
-}
-
-class FlexChatPeerConnectionFactory @Inject constructor(
-    private val peerConnectionFactory: PeerConnectionFactory,
-    private val videoDecoderFactory: DefaultVideoDecoderFactory,
-    private val videoEncoderFactory: DefaultVideoEncoderFactory,
-    val eglBaseContext: EglBase.Context,
-    val rtcConfiguration: RTCConfiguration,
-) {
-    fun makePeerConnection(
-        configuration: RTCConfiguration,
-        coroutineScope: CoroutineScope,
-        mediaConstraints: MediaConstraints,
-        onIceCandidateRequest: ((IceCandidate, StreamPeerType) -> Unit)? = null,
-        onNegotiationNeeded: ((FlexChatPeerConnection, StreamPeerType) -> Unit)? = null,
-        onStreamAdded: ((MediaStream) -> Unit)? = null,
-        onVideoTrack: ((RtpTransceiver?) -> Unit)? = null,
-        type: StreamPeerType,
-    ): FlexChatPeerConnection {
-        val peerConnection = FlexChatPeerConnection(
-            coroutineScope = coroutineScope,
-            mediaConstraints = mediaConstraints,
-            onIceCandidate = onIceCandidateRequest,
-            onNegotiationNeeded = onNegotiationNeeded,
-            onStreamAdded = onStreamAdded,
-            onVideoTrack = onVideoTrack,
-            type = type,
-        )
-        val connection = makePeerConnectionInternal(
-            configuration = configuration,
-            observer = peerConnection
-        )
-        return peerConnection.apply { initialize(connection) }
-    }
-
-    private fun makePeerConnectionInternal(
-        configuration: RTCConfiguration,
-        observer: PeerConnection.Observer,
-    ): PeerConnection = requireNotNull(
-        peerConnectionFactory.createPeerConnection(configuration, observer)
-    )
-
-    fun makeVideoSource(isScreencast: Boolean): VideoSource = peerConnectionFactory
-        .createVideoSource(isScreencast)
-
-    fun makeVideoTrack(source: VideoSource, trackId: String): VideoTrack = peerConnectionFactory
-        .createVideoTrack(trackId, source)
-
-    fun makeAudioSource(
-        constraints: MediaConstraints = MediaConstraints(),
-    ): AudioSource = peerConnectionFactory
-        .createAudioSource(constraints)
-
-    fun makeAudioTrack(
-        source: AudioSource,
-        trackId: String,
-    ): AudioTrack = peerConnectionFactory
-        .createAudioTrack(trackId, source)
-}
+import kotlin.time.Duration.Companion.seconds
 
 class FlexChatPeerConnection(
     private val coroutineScope: CoroutineScope,
@@ -112,7 +47,7 @@ class FlexChatPeerConnection(
     private val onNegotiationNeeded: ((FlexChatPeerConnection, StreamPeerType) -> Unit)?,
     private val onStreamAdded: ((MediaStream) -> Unit)?,
     private val onVideoTrack: ((RtpTransceiver?) -> Unit)?,
-    private val type: StreamPeerType,
+    private val streamPeerType: StreamPeerType,
 ) : PeerConnection.Observer {
 
     lateinit var peerConnection: PeerConnection
@@ -121,8 +56,9 @@ class FlexChatPeerConnection(
     private var statsJob: Job? = null
 
     private val pendingIceMutex: Mutex = Mutex()
-
     private val pendingIceCandidates: MutableList<IceCandidate> = mutableListOf()
+
+    private val statsFlow: MutableStateFlow<RTCStatsReport?> = MutableStateFlow(null)
 
     fun initialize(peerConnection: PeerConnection) {
         Timber.i("peerConnection: $peerConnection")
@@ -165,6 +101,7 @@ class FlexChatPeerConnection(
         val sdp = with(sessionDescription) {
             SessionDescription(type, description)
         }
+        Timber.d("setLocalDescription: offerSdp: ${sessionDescription.stringify()}")
         peerConnection.setLocalDescription(it, sdp)
     }
 
@@ -184,9 +121,7 @@ class FlexChatPeerConnection(
 
     override fun onIceCandidate(iceCandidate: IceCandidate?) {
         Timber.i("iceCandidate: $iceCandidate")
-        if (iceCandidate == null)
-            return
-        onIceCandidate?.invoke(iceCandidate, StreamPeerType.Publisher)
+        iceCandidate?.let { onIceCandidate?.invoke(it, streamPeerType) }
     }
 
 
@@ -213,48 +148,73 @@ class FlexChatPeerConnection(
     }
 
     override fun onIceConnectionChange(iceConnectionState: PeerConnection.IceConnectionState?) {
-        Timber.d(iceConnectionState?.name.orEmpty())
+        Timber.d("onIceConnectionChange: iceConnectionState: $iceConnectionState")
+        when (iceConnectionState) {
+            PeerConnection.IceConnectionState.NEW -> {}
+            PeerConnection.IceConnectionState.CHECKING -> {}
+            PeerConnection.IceConnectionState.CONNECTED -> {
+                statsJob = observeStats()
+            }
+
+            PeerConnection.IceConnectionState.COMPLETED -> {}
+            PeerConnection.IceConnectionState.FAILED -> {}
+            PeerConnection.IceConnectionState.DISCONNECTED -> {
+                statsJob?.cancel()
+            }
+
+            PeerConnection.IceConnectionState.CLOSED -> {}
+            null -> {}
+        }
     }
 
-    override fun onStandardizedIceConnectionChange(newState: PeerConnection.IceConnectionState?) {
-        super.onStandardizedIceConnectionChange(newState)
+    private fun observeStats() = coroutineScope.launch {
+        while (isActive) {
+            delay(10.seconds)
+            peerConnection.getStats { rtcStatsReport ->
+                Timber.v("observeStats: $rtcStatsReport")
+                statsFlow.update { rtcStatsReport }
+            }
+        }
+    }
+
+    override fun onIceConnectionReceivingChange(p0: Boolean) {
+        Timber.i("onIceConnectionReceivingChange: receiving: $p0")
+    }
+
+    override fun onIceGatheringChange(p0: PeerConnection.IceGatheringState?) {
+        Timber.i("onIceGatheringChange: newIceGatheringState: $p0")
     }
 
     override fun onConnectionChange(newState: PeerConnection.PeerConnectionState?) {
         super.onConnectionChange(newState)
+        Timber.i("onConnectionChange: newState: $newState")
     }
-
-    override fun onIceConnectionReceivingChange(p0: Boolean) {
-        TODO("Not yet implemented")
-    }
-
-    override fun onIceGatheringChange(p0: PeerConnection.IceGatheringState?) {
-        TODO("Not yet implemented")
-    }
-
 
     override fun onIceCandidateError(event: IceCandidateErrorEvent?) {
         super.onIceCandidateError(event)
+        Timber.i("onIceCandidateError: event: $event")
     }
 
     override fun onIceCandidatesRemoved(p0: Array<out IceCandidate>?) {
-        TODO("Not yet implemented")
+        Timber.i("onIceCandidatesRemoved: iceCandidates: $p0")
     }
 
     override fun onSelectedCandidatePairChanged(event: CandidatePairChangeEvent?) {
         super.onSelectedCandidatePairChanged(event)
+        Timber.i("onSelectedCandidatePairChanged: event: $event")
     }
 
-
     override fun onRemoveStream(p0: MediaStream?) {
+        Timber.i("onRemoveStream removed mediaStream: $p0")
     }
 
     override fun onDataChannel(p0: DataChannel?) {
-        TODO("Not yet implemented")
+        Timber.i("onDataChannel: dataChannel: $p0")
     }
 
     override fun onRenegotiationNeeded() {
-        TODO("Not yet implemented")
+        Timber.i("onRenegotiationNeeded no args")
+        onNegotiationNeeded?.invoke(this, streamPeerType)
     }
 
 
@@ -264,6 +224,8 @@ class FlexChatPeerConnection(
 
     override fun onTrack(transceiver: RtpTransceiver?) {
         super.onTrack(transceiver)
+        Timber.i("onTrack: transceiver: $transceiver")
+        onVideoTrack?.invoke(transceiver)
     }
 }
 

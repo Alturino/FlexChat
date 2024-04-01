@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.onirutla.flexchat.di
+package com.onirutla.flexchat.core.di
 
 import android.content.Context
 import android.os.Build
@@ -29,25 +29,35 @@ import org.webrtc.EglBase
 import org.webrtc.Logging
 import org.webrtc.PeerConnection
 import org.webrtc.PeerConnectionFactory
+import org.webrtc.SimulcastVideoEncoderFactory
+import org.webrtc.SoftwareVideoEncoderFactory
+import org.webrtc.VideoEncoderFactory
 import org.webrtc.audio.JavaAudioDeviceModule
 import timber.log.Timber
+import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 object WebRtcModule {
 
     @Provides
+    @Singleton
     fun provideEglBaseContext(): EglBase.Context = EglBase.create().eglBaseContext
 
     @Provides
+    @Singleton
     fun provideVideoDecoderFactory(eglBaseContext: EglBase.Context): DefaultVideoDecoderFactory =
         DefaultVideoDecoderFactory(eglBaseContext)
 
     @Provides
-    fun provideVideoEncoderFactory(eglBaseContext: EglBase.Context): DefaultVideoEncoderFactory =
-        DefaultVideoEncoderFactory(eglBaseContext, true, true)
+    @Singleton
+    fun provideVideoEncoderFactory(eglBaseContext: EglBase.Context): VideoEncoderFactory {
+        val hardwareEncoderFactory = DefaultVideoEncoderFactory(eglBaseContext, true, true)
+        return SimulcastVideoEncoderFactory(hardwareEncoderFactory, SoftwareVideoEncoderFactory())
+    }
 
     @Provides
+    @Singleton
     fun provideRTCConfiguration(): PeerConnection.RTCConfiguration {
         val stunServers = listOf(
             "stun:stun.l.google.com:19302",
@@ -67,9 +77,10 @@ object WebRtcModule {
     }
 
     @Provides
+    @Singleton
     fun providePeerConnectionFactory(
         @ApplicationContext context: Context,
-        videoEncoderFactory: DefaultVideoEncoderFactory,
+        videoEncoderFactory: VideoEncoderFactory,
         videoDecoderFactory: DefaultVideoDecoderFactory,
     ): PeerConnectionFactory {
         val peerConnectionOption = PeerConnectionFactory.InitializationOptions.builder(context)
