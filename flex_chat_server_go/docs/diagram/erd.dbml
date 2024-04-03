@@ -1,0 +1,78 @@
+// Use DBML to define your database structure
+// Docs: https://dbml.dbdiagram.io/docs
+
+Table users {
+  id uuid [primary key]
+  username varchar
+  photo_profile_url varchar
+  created_at timestamp
+  deleted_at timestamp
+  phone_number varchar
+  private boolean
+  email varchar
+  is_online boolean
+}
+
+Table conversation_members  {
+  id uuid [primary key]
+  user_id integer
+  conversation_id integer
+  username varchar
+  photo_profile_url varchar
+  joined_at timestamp
+  left_at timestamp
+}
+
+Table conversations {
+  id uuid [primary key]
+  name varchar
+  is_group boolean
+  created_at timestamp
+  deleted_at timestamp
+}
+
+Table messages{
+  id uuid [primary key]
+  user_id integer
+  conversation_id integer
+  conversation_member_id integer
+  sender_name varchar
+  message_body varchar
+  created_at timestamp
+  deleted_at timestamp
+}
+
+Table attachments{
+  id uuid [primary key]
+  conversation_id integer
+  user_id integer
+  message_id integer
+  url varchar
+  created_at timestamp
+  deleted_at timestamp
+}
+
+Table unread_messages{
+  id uuid [primary key]
+  conversation_member_id integer
+  message_id integer
+}
+
+Table friends {
+  id uuid [primary key]
+  user_id integer
+  with_user_id integer
+}
+
+ref: users.id < conversation_members.user_id
+ref: conversations.id < conversation_members.conversation_id
+ref: conversations.id < messages.conversation_id
+ref: conversations.id < attachments.conversation_id
+ref: users.id < messages.user_id
+ref: users.id < attachments.user_id
+ref: messages.id < attachments.message_id
+ref: conversation_members.id < unread_messages.conversation_member_id
+ref: conversation_members.id < messages.conversation_member_id
+ref: messages.id < unread_messages.message_id
+ref: users.id < friends.user_id
+ref: users.id < friends.with_user_id
