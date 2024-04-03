@@ -26,6 +26,7 @@ sealed class Screens(val route: String) {
         data object AddNewConversationScreen : Conversation("/conversation/add")
         data object CameraScreen: Conversation("/conversations/camera")
         data object EditPhotoScreen: Conversation("/conversations/camera/edit")
+        data object CallScreen : Conversation("/conversations/call")
     }
 
     sealed class Auth(val route: String) {

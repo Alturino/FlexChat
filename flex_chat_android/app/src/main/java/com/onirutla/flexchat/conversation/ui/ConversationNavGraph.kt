@@ -19,6 +19,8 @@ package com.onirutla.flexchat.conversation.ui
 import android.net.Uri
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.platform.LocalContext
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -42,6 +44,10 @@ import com.onirutla.flexchat.conversation.ui.conversations.ConversationsScreen
 import com.onirutla.flexchat.conversation.ui.conversations.ConversationsUiEvent
 import com.onirutla.flexchat.conversation.ui.conversations.ConversationsViewModel
 import com.onirutla.flexchat.core.ui.Screens
+import com.onirutla.flexchat.core.webrtc.FlexChatPeerConnectionFactory
+import com.onirutla.flexchat.core.webrtc.SignalingClient
+import com.onirutla.flexchat.core.webrtc.WebRtcSessionManager
+import com.onirutla.flexchat.core.webrtc.WebRtcSessionManagerImpl
 import com.onirutla.flexchat.ui.screens.profile_screen.ProfileScreenViewModel
 import com.onirutla.flexchat.user.ui.profile_screen.ProfileScreen
 import com.onirutla.flexchat.user.ui.profile_screen.ProfileScreenUiEvent
@@ -158,6 +164,7 @@ fun NavGraphBuilder.conversationNavGraph(navController: NavHostController) {
                 vm(conversationId)
             }
 
+
             ConversationRoomScreen(
                 state = state,
                 onEvent = vm::onEvent,
@@ -185,11 +192,12 @@ fun NavGraphBuilder.conversationNavGraph(navController: NavHostController) {
 
                         // TODO: Implement voice and or video chat
                         ConversationRoomUiEvent.OnCallClick -> {
+                            navController.navigate(Screens.Conversation.CallScreen.route)
 
                         }
 
                         ConversationRoomUiEvent.OnVideoCallClick -> {
-
+//
                         }
 
                     }
@@ -243,6 +251,46 @@ fun NavGraphBuilder.conversationNavGraph(navController: NavHostController) {
             )
         }
 
+//        route = "${Screens.Conversation.Default.route}/{conversationId}",
+//        arguments = listOf(
+//            navArgument(name = "conversationId") {
+//                type = NavType.StringType
+//                defaultValue = ""
+//                nullable = false
+//            }
+//        ),
+//        deepLinks = listOf(),
+
+        composable(
+            route = "${Screens.Conversation.CallScreen.route}/{conversationId}",
+            arguments = listOf(
+                navArgument(name = "conversationId") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                    nullable = false
+                }
+            ),
+            deepLinks = listOf()
+        ) {
+            val context = LocalContext.current
+            val vm: ConversationRoomViewModel = hiltViewModel()
+
+            val conversationId = it.arguments?.getString("conversationId", "").orEmpty()
+            val callSession: WebRtcSessionManager = rememberSaveable {
+                WebRtcSessionManagerImpl(
+                    context = context,
+                    signalingClient = SignalingClient(vm.firestore),
+                    peerConnectionFactory = FlexChatPeerConnectionFactory(context),
+                    conversationId = conversationId
+                )
+            }
+
+            val callSessionState = callSession.signalingClient
+                .sessionStateFlow
+                .collectAsStateWithLifecycle()
+
+
+        }
 
     }
 }

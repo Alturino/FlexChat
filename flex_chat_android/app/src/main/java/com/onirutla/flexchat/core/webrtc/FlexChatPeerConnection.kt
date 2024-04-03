@@ -21,7 +21,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -32,13 +32,13 @@ import org.webrtc.IceCandidate
 import org.webrtc.IceCandidateErrorEvent
 import org.webrtc.MediaConstraints
 import org.webrtc.MediaStream
+import org.webrtc.MediaStreamTrack
 import org.webrtc.PeerConnection
 import org.webrtc.RTCStatsReport
 import org.webrtc.RtpReceiver
 import org.webrtc.RtpTransceiver
 import org.webrtc.SessionDescription
 import timber.log.Timber
-import kotlin.time.Duration.Companion.seconds
 
 class FlexChatPeerConnection(
     private val coroutineScope: CoroutineScope,
@@ -47,187 +47,275 @@ class FlexChatPeerConnection(
     private val onNegotiationNeeded: ((FlexChatPeerConnection, StreamPeerType) -> Unit)?,
     private val onStreamAdded: ((MediaStream) -> Unit)?,
     private val onVideoTrack: ((RtpTransceiver?) -> Unit)?,
-    private val streamPeerType: StreamPeerType,
+    private val type: StreamPeerType,
 ) : PeerConnection.Observer {
 
-    lateinit var peerConnection: PeerConnection
+    /**
+     * The wrapped connection for all the WebRTC communication.
+     */
+    lateinit var connection: PeerConnection
         private set
 
+    /**
+     * Used to manage the stats observation lifecycle.
+     */
     private var statsJob: Job? = null
 
-    private val pendingIceMutex: Mutex = Mutex()
-    private val pendingIceCandidates: MutableList<IceCandidate> = mutableListOf()
+    /**
+     * Used to pool together and store [IceCandidate]s before consuming them.
+     */
+    private val pendingIceMutex = Mutex()
+    private val pendingIceCandidates = mutableListOf<IceCandidate>()
 
+    /**
+     * Contains stats events for observation.
+     */
     private val statsFlow: MutableStateFlow<RTCStatsReport?> = MutableStateFlow(null)
 
+    init {
+        Timber.i("<init> #sfu;  mediaConstraints: $mediaConstraints")
+    }
+
+    /**
+     * Initialize a [FlexChatPeerConnection] using a WebRTC [PeerConnection].
+     *
+     * @param peerConnection The connection that holds audio and video tracks.
+     */
     fun initialize(peerConnection: PeerConnection) {
-        Timber.i("peerConnection: $peerConnection")
-        this.peerConnection = peerConnection
+        Timber.d("[initialize] #sfu;  peerConnection: $peerConnection")
+        this.connection = peerConnection
     }
 
-    suspend fun createOffer(): SessionDescription {
-        Timber.d("Create Offer")
-        return getSessionDescription { peerConnection.createOffer(it, mediaConstraints) }
+    /**
+     * Used to create an offer whenever there's a negotiation that we need to process on the
+     * publisher side.
+     *
+     * @return [Result] wrapper of the [SessionDescription] for the publisher.
+     */
+    suspend fun createOffer(): Result<SessionDescription> {
+        Timber.d("[createOffer] #sfu;  no args")
+        return createValue { connection.createOffer(it, mediaConstraints) }
     }
 
-    suspend fun createAnswer(): SessionDescription {
-        Timber.d("Create Answer")
-        return getSessionDescription { peerConnection.createAnswer(it, mediaConstraints) }
+    /**
+     * Used to create an answer whenever there's a subscriber offer.
+     *
+     * @return [Result] wrapper of the [SessionDescription] for the subscriber.
+     */
+    suspend fun createAnswer(): Result<SessionDescription> {
+        Timber.d("[createAnswer] #sfu;  no args")
+        return createValue { connection.createAnswer(it, mediaConstraints) }
     }
 
-    suspend fun setRemoteDescription(
-        sessionDescription: SessionDescription,
-    ) = setSessionDescription {
-        peerConnection.setRemoteDescription(
-            it,
-            SessionDescription(
-                sessionDescription.type,
-                sessionDescription.description.mungeCodecs()
+    /**
+     * Used to set up the SDP on underlying connections and to add [pendingIceCandidates] to the
+     * connection for listening.
+     *
+     * @param sessionDescription That contains the remote SDP.
+     * @return An empty [Result], if the operation has been successful or not.
+     */
+    suspend fun setRemoteDescription(sessionDescription: SessionDescription): Result<Unit> {
+        Timber.d("[setRemoteDescription] #sfu;  answerSdp: ${sessionDescription.stringify()}")
+        return setValue {
+            connection.setRemoteDescription(
+                it,
+                SessionDescription(
+                    sessionDescription.type,
+                    sessionDescription.description.mungeCodecs()
+                )
             )
-        )
-    }.also {
-        pendingIceMutex.withLock {
-            pendingIceCandidates.forEach { iceCandidate ->
-                Timber.i("setRemoteDescription pendingRtcIceCandidate: $iceCandidate")
-                peerConnection.addRtcIceCandidate(iceCandidate)
+        }.also {
+            pendingIceMutex.withLock {
+                pendingIceCandidates.forEach { iceCandidate ->
+                    Timber.i("[setRemoteDescription] #sfu; #subscriber; pendingRtcIceCandidate: $iceCandidate")
+                    connection.addRtcIceCandidate(iceCandidate)
+                }
+                pendingIceCandidates.clear()
             }
-            pendingIceCandidates.clear()
         }
     }
 
-    suspend fun setLocalDescription(
-        sessionDescription: SessionDescription,
-    ) = setSessionDescription {
-        val sdp = with(sessionDescription) {
-            SessionDescription(type, description)
-        }
-        Timber.d("setLocalDescription: offerSdp: ${sessionDescription.stringify()}")
-        peerConnection.setLocalDescription(it, sdp)
+    /**
+     * Sets the local description for a connection either for the subscriber or publisher based on
+     * the flow.
+     *
+     * @param sessionDescription That contains the subscriber or publisher SDP.
+     * @return An empty [Result], if the operation has been successful or not.
+     */
+    suspend fun setLocalDescription(sessionDescription: SessionDescription): Result<Unit> {
+        val sdp = SessionDescription(
+            sessionDescription.type,
+            sessionDescription.description.mungeCodecs()
+        )
+        Timber.d("[setLocalDescription] #sfu;  offerSdp: ${sessionDescription.stringify()}")
+        return setValue { connection.setLocalDescription(it, sdp) }
     }
 
+    /**
+     * Adds an [IceCandidate] to the underlying [connection] if it's already been set up, or stores
+     * it for later consumption.
+     *
+     * @param iceCandidate To process and add to the connection.
+     * @return An empty [Result], if the operation has been successful or not.
+     */
     suspend fun addIceCandidate(iceCandidate: IceCandidate): Result<Unit> {
-        if (peerConnection.remoteDescription == null) {
-            Timber.w("Postponed (no remoteDescription)")
+        if (connection.remoteDescription == null) {
+            Timber.w("[addIceCandidate] #sfu;  postponed (no remoteDescription): $iceCandidate")
             pendingIceMutex.withLock {
                 pendingIceCandidates.add(iceCandidate)
             }
             return Result.failure(RuntimeException("RemoteDescription is not set"))
         }
-        Timber.d("rtcIceCandidate: $iceCandidate")
-        return Result.success(peerConnection.addRtcIceCandidate(iceCandidate)).also {
-            Timber.v("Completed: $it")
+        Timber.d("[addIceCandidate] #sfu;  rtcIceCandidate: $iceCandidate")
+        return connection.addRtcIceCandidate(iceCandidate).also {
+            Timber.v("[addIceCandidate] #sfu;  completed: $it")
         }
     }
 
-    override fun onIceCandidate(iceCandidate: IceCandidate?) {
-        Timber.i("iceCandidate: $iceCandidate")
-        iceCandidate?.let { onIceCandidate?.invoke(it, streamPeerType) }
+    /**
+     * Peer connection listeners.
+     * Triggered whenever there's a new [RtcIceCandidate] for the call. Used to update our tracks
+     * and subscriptions.
+     *
+     * @param candidate The new candidate.
+     */
+    override fun onIceCandidate(candidate: IceCandidate?) {
+        Timber.i("[onIceCandidate] #sfu;  candidate: $candidate")
+        if (candidate == null) return
+
+        onIceCandidate?.invoke(candidate, type)
     }
 
-
-    override fun onAddStream(mediaStream: MediaStream?) {
-        Timber.i("mediaStream: $mediaStream")
-        mediaStream?.let { onStreamAdded?.invoke(it) }
+    /**
+     * Triggered whenever there's a new [MediaStream] that was added to the connection.
+     *
+     * @param stream The stream that contains audio or video.
+     */
+    override fun onAddStream(stream: MediaStream?) {
+        Timber.i("[onAddStream] #sfu;  stream: $stream")
+        if (stream != null) {
+            onStreamAdded?.invoke(stream)
+        }
     }
 
+    /**
+     * Triggered whenever there's a new [MediaStream] or [MediaStreamTrack] that's been added
+     * to the call. It contains all audio and video tracks for a given session.
+     *
+     * @param receiver The receiver of tracks.
+     * @param mediaStreams The streams that were added containing their appropriate tracks.
+     */
     override fun onAddTrack(receiver: RtpReceiver?, mediaStreams: Array<out MediaStream>?) {
-        super.onAddTrack(receiver, mediaStreams)
-        Timber.i("receiver: $receiver, mediaStreams: $mediaStreams")
+        Timber.i("[onAddTrack] #sfu;  receiver: $receiver, mediaStreams: $mediaStreams")
         mediaStreams?.forEach { mediaStream ->
-            Timber.v("mediaStream: $mediaStream")
-            mediaStream.audioTracks.forEach { remoteAudioTrack ->
-                Timber.v("remoteAudioTrack: $remoteAudioTrack")
+            Timber.v("[onAddTrack] #sfu;  mediaStream: $mediaStream")
+            mediaStream.audioTracks?.forEach { remoteAudioTrack ->
+                Timber.v("[onAddTrack] #sfu;  remoteAudioTrack: ${remoteAudioTrack.stringify()}")
                 remoteAudioTrack.setEnabled(true)
             }
             onStreamAdded?.invoke(mediaStream)
         }
     }
 
-    override fun onSignalingChange(signalingState: PeerConnection.SignalingState?) {
-        Timber.d(signalingState?.name.orEmpty())
+    /**
+     * Triggered whenever there's a new negotiation needed for the active [PeerConnection].
+     */
+    override fun onRenegotiationNeeded() {
+        Timber.i("[onRenegotiationNeeded] #sfu;  no args")
+        onNegotiationNeeded?.invoke(this, type)
     }
 
-    override fun onIceConnectionChange(iceConnectionState: PeerConnection.IceConnectionState?) {
-        Timber.d("onIceConnectionChange: iceConnectionState: $iceConnectionState")
-        when (iceConnectionState) {
-            PeerConnection.IceConnectionState.NEW -> {}
-            PeerConnection.IceConnectionState.CHECKING -> {}
-            PeerConnection.IceConnectionState.CONNECTED -> {
-                statsJob = observeStats()
-            }
+    /**
+     * Triggered whenever a [MediaStream] was removed.
+     *
+     * @param stream The stream that was removed from the connection.
+     */
+    override fun onRemoveStream(stream: MediaStream?) {}
 
-            PeerConnection.IceConnectionState.COMPLETED -> {}
-            PeerConnection.IceConnectionState.FAILED -> {}
-            PeerConnection.IceConnectionState.DISCONNECTED -> {
-                statsJob?.cancel()
-            }
+    /**
+     * Triggered when the connection state changes.  Used to start and stop the stats observing.
+     *
+     * @param newState The new state of the [PeerConnection].
+     */
+    override fun onIceConnectionChange(newState: PeerConnection.IceConnectionState?) {
+        Timber.i("[onIceConnectionChange] #sfu;  newState: $newState")
+        when (newState) {
+            PeerConnection.IceConnectionState.CLOSED,
+            PeerConnection.IceConnectionState.FAILED,
+            PeerConnection.IceConnectionState.DISCONNECTED,
+            -> statsJob?.cancel()
 
-            PeerConnection.IceConnectionState.CLOSED -> {}
-            null -> {}
+            PeerConnection.IceConnectionState.CONNECTED -> statsJob = observeStats()
+            else -> Unit
         }
     }
 
+    /**
+     * @return The [RTCStatsReport] for the active connection.
+     */
+    fun getStats(): StateFlow<RTCStatsReport?> {
+        return statsFlow
+    }
+
+    /**
+     * Observes the local connection stats and emits it to [statsFlow] that users can consume.
+     */
     private fun observeStats() = coroutineScope.launch {
         while (isActive) {
-            delay(10.seconds)
-            peerConnection.getStats { rtcStatsReport ->
-                Timber.v("observeStats: $rtcStatsReport")
-                statsFlow.update { rtcStatsReport }
+            delay(10_000L)
+            connection.getStats {
+                Timber.v("[observeStats] #sfu;  stats: $it")
+                statsFlow.value = it
             }
         }
-    }
-
-    override fun onIceConnectionReceivingChange(p0: Boolean) {
-        Timber.i("onIceConnectionReceivingChange: receiving: $p0")
-    }
-
-    override fun onIceGatheringChange(p0: PeerConnection.IceGatheringState?) {
-        Timber.i("onIceGatheringChange: newIceGatheringState: $p0")
-    }
-
-    override fun onConnectionChange(newState: PeerConnection.PeerConnectionState?) {
-        super.onConnectionChange(newState)
-        Timber.i("onConnectionChange: newState: $newState")
-    }
-
-    override fun onIceCandidateError(event: IceCandidateErrorEvent?) {
-        super.onIceCandidateError(event)
-        Timber.i("onIceCandidateError: event: $event")
-    }
-
-    override fun onIceCandidatesRemoved(p0: Array<out IceCandidate>?) {
-        Timber.i("onIceCandidatesRemoved: iceCandidates: $p0")
-    }
-
-    override fun onSelectedCandidatePairChanged(event: CandidatePairChangeEvent?) {
-        super.onSelectedCandidatePairChanged(event)
-        Timber.i("onSelectedCandidatePairChanged: event: $event")
-    }
-
-    override fun onRemoveStream(p0: MediaStream?) {
-        Timber.i("onRemoveStream removed mediaStream: $p0")
-    }
-
-    override fun onDataChannel(p0: DataChannel?) {
-        Timber.i("onDataChannel: dataChannel: $p0")
-    }
-
-    override fun onRenegotiationNeeded() {
-        Timber.i("onRenegotiationNeeded no args")
-        onNegotiationNeeded?.invoke(this, streamPeerType)
-    }
-
-
-    override fun onRemoveTrack(receiver: RtpReceiver?) {
-        super.onRemoveTrack(receiver)
     }
 
     override fun onTrack(transceiver: RtpTransceiver?) {
-        super.onTrack(transceiver)
-        Timber.i("onTrack: transceiver: $transceiver")
+        Timber.i("[onTrack] #sfu;  transceiver: $transceiver")
         onVideoTrack?.invoke(transceiver)
     }
-}
 
-private fun String.mungeCodecs() =
-    replace("vp9", "VP9").replace("vp8", "VP8").replace("h264", "H264")
+    /**
+     * Domain - [PeerConnection] and [PeerConnection.Observer] related callbacks.
+     */
+    override fun onRemoveTrack(receiver: RtpReceiver?) {
+        Timber.i("[onRemoveTrack] #sfu;  receiver: $receiver")
+    }
+
+    override fun onSignalingChange(newState: PeerConnection.SignalingState?) {
+        Timber.d("[onSignalingChange] #sfu;  newState: $newState")
+    }
+
+    override fun onIceConnectionReceivingChange(receiving: Boolean) {
+        Timber.i("[onIceConnectionReceivingChange] #sfu;  receiving: $receiving")
+    }
+
+    override fun onIceGatheringChange(newState: PeerConnection.IceGatheringState?) {
+        Timber.i("[onIceGatheringChange] #sfu;  newState: $newState")
+    }
+
+    override fun onIceCandidatesRemoved(iceCandidates: Array<out org.webrtc.IceCandidate>?) {
+        Timber.i("[onIceCandidatesRemoved] #sfu;  iceCandidates: $iceCandidates")
+    }
+
+    override fun onIceCandidateError(event: IceCandidateErrorEvent?) {
+        Timber.e("[onIceCandidateError] #sfu;  event: ${event?.stringify()}")
+    }
+
+    override fun onConnectionChange(newState: PeerConnection.PeerConnectionState?) {
+        Timber.i("[onConnectionChange] #sfu;  newState: $newState")
+    }
+
+    override fun onSelectedCandidatePairChanged(event: CandidatePairChangeEvent?) {
+        Timber.i("[onSelectedCandidatePairChanged] #sfu;  event: $event")
+    }
+
+    override fun onDataChannel(channel: DataChannel?): Unit = Unit
+
+    override fun toString(): String =
+        "FlexChatPeerConnection(constraints=$mediaConstraints)"
+
+    private fun String.mungeCodecs(): String {
+        return this.replace("vp9", "VP9").replace("vp8", "VP8").replace("h264", "H264")
+    }
+}

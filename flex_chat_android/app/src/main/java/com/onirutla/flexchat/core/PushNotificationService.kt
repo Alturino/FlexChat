@@ -31,9 +31,9 @@ import com.onirutla.flexchat.MainActivity
 import com.onirutla.flexchat.R
 import com.onirutla.flexchat.auth.domain.repository.AuthRepository
 import com.onirutla.flexchat.conversation.domain.repository.ConversationRepository
-import com.onirutla.flexchat.core.util.NotificationConstants.NOTIFICATION_CHANNEL_ID
-import com.onirutla.flexchat.core.util.NotificationConstants.NOTIFICATION_CHANNEL_NAME
-import com.onirutla.flexchat.core.util.NotificationConstants.NOTIFICATION_ID
+import com.onirutla.flexchat.core.util.NotificationConstants.CHAT_NOTIFICATION_CHANNEL_ID
+import com.onirutla.flexchat.core.util.NotificationConstants.CHAT_NOTIFICATION_CHANNEL_NAME
+import com.onirutla.flexchat.core.util.NotificationConstants.CHAT_NOTIFICATION_ID
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -80,25 +80,25 @@ class PushNotificationService : FirebaseMessagingService() {
         val contentIntent = Intent(applicationContext, MainActivity::class.java)
         val contentPendingIntent = PendingIntent.getActivity(
             applicationContext,
-            NOTIFICATION_ID,
+            CHAT_NOTIFICATION_ID,
             contentIntent,
             PendingIntent.FLAG_IMMUTABLE
         )
 
-        val notification = NotificationCompat.Builder(applicationContext, NOTIFICATION_CHANNEL_ID)
+        val notification = NotificationCompat.Builder(applicationContext, CHAT_NOTIFICATION_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(title)
             .setContentText(notificationBody)
             .setContentIntent(contentPendingIntent)
             .setAutoCancel(true)
-            .setChannelId(NOTIFICATION_CHANNEL_ID)
+            .setChannelId(CHAT_NOTIFICATION_CHANNEL_ID)
             .build()
 
         val notificationManager = NotificationManagerCompat.from(applicationContext)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val notificationChannel = NotificationChannelCompat
-                .Builder(NOTIFICATION_CHANNEL_ID, NotificationManagerCompat.IMPORTANCE_DEFAULT)
-                .setName(NOTIFICATION_CHANNEL_NAME)
+                .Builder(CHAT_NOTIFICATION_CHANNEL_ID, NotificationManagerCompat.IMPORTANCE_DEFAULT)
+                .setName(CHAT_NOTIFICATION_CHANNEL_NAME)
                 .build()
             notificationManager.createNotificationChannel(notificationChannel)
         }
@@ -109,7 +109,7 @@ class PushNotificationService : FirebaseMessagingService() {
         ) {
             return
         }
-        notificationManager.notify(NOTIFICATION_ID, notification)
+        notificationManager.notify(CHAT_NOTIFICATION_ID, notification)
     }
 
     override fun onDestroy() {

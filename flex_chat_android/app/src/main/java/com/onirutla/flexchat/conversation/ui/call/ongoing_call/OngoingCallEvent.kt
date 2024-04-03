@@ -14,14 +14,11 @@
  * limitations under the License.
  */
 
-package com.onirutla.flexchat.core.util
+package com.onirutla.flexchat.conversation.ui.call.ongoing_call
 
-object FirebaseCollections {
-    const val CONVERSATIONS = "conversations"
-    const val CONVERSATION_MEMBERS = "conversation_members"
-    const val USERS = "users"
-    const val MESSAGES = "messages"
-    const val ATTACHMENTS = "attachments"
-    const val ONGOING_CALL = "ongoing_call"
-    const val CALL_LOG = "ongoing_call"
+sealed interface OngoingCallEvent {
+    data class OnMicEnabledChanged(val value: Boolean) : OngoingCallEvent
+    data class OnIsCameraEnabledChange(val value: Boolean) : OngoingCallEvent
+    data class OnAudioOutputChanged(val value: AudioOutputType) : OngoingCallEvent
+    data object OnCallEnd : OngoingCallEvent
 }

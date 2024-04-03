@@ -14,14 +14,9 @@
  * limitations under the License.
  */
 
-package com.onirutla.flexchat.core.util
+package com.onirutla.flexchat.conversation.ui.call
 
-object FirebaseCollections {
-    const val CONVERSATIONS = "conversations"
-    const val CONVERSATION_MEMBERS = "conversation_members"
-    const val USERS = "users"
-    const val MESSAGES = "messages"
-    const val ATTACHMENTS = "attachments"
-    const val ONGOING_CALL = "ongoing_call"
-    const val CALL_LOG = "ongoing_call"
-}
+data class CallUiState(
+    val callState: CallState = CallState.Initial,
+)
+

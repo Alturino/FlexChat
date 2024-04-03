@@ -17,7 +17,15 @@
 package com.onirutla.flexchat.core.util
 
 object NotificationConstants {
-    const val NOTIFICATION_ID = 1
-    const val NOTIFICATION_CHANNEL_ID = "Firebase Channel"
-    const val NOTIFICATION_CHANNEL_NAME = "Firebase Notification"
+    const val CHAT_NOTIFICATION_ID = 1
+    const val CHAT_NOTIFICATION_CHANNEL_ID = "CHAT_NOTIFICATION_CHANNEL_ID"
+    const val CHAT_NOTIFICATION_CHANNEL_NAME = "Chat Notification"
+
+    const val INCOMING_CALL_NOTIFICATION_ID = 2
+    const val INCOMING_CALL_NOTIFICATION_CHANNEL_ID = "INCOMING_CALL_NOTIFICATION_CHANNEL_ID"
+    const val INCOMING_CALL_NOTIFICATION_CHANNEL_NAME = "Incoming call"
+
+    const val ONGOING_CALL_NOTIFICATION_ID = 3
+    const val ONGOING_CALL_NOTIFICATION_CHANNEL_ID = "ONGOING_CALL_NOTIFICATION_CHANNEL_ID"
+    const val ONGOING_CALL_NOTIFICATION_CHANNEL_NAME = "Ongoing call"
 }

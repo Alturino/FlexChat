@@ -36,6 +36,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Send
+import androidx.compose.material.icons.rounded.VideoCall
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
@@ -78,6 +79,13 @@ fun ConversationRoomScreen(
                 navigationIcon = {
                     IconButton(onClick = { onUiEvent(ConversationRoomUiEvent.OnNavigateUp) }) {
                         Icon(imageVector = Icons.Rounded.ArrowBack, contentDescription = null)
+                    }
+                },
+                actions = {
+                    Row {
+                        IconButton(onClick = { onUiEvent(ConversationRoomUiEvent.OnVideoCallClick) }) {
+                            Icon(imageVector = Icons.Rounded.VideoCall, contentDescription = null)
+                        }
                     }
                 }
             )

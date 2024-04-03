@@ -16,6 +16,11 @@
 
 package com.onirutla.flexchat.core.webrtc
 
+import arrow.core.Either
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.toObject
+import com.onirutla.flexchat.conversation.data.model.OnGoingCallResponse
+import com.onirutla.flexchat.core.util.FirebaseCollections
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -24,88 +29,102 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.filterNot
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import okhttp3.OkHttpClient
-import okhttp3.WebSocket
-import okhttp3.WebSocketListener
+import kotlinx.coroutines.tasks.await
 import timber.log.Timber
 
-class SignalingClient {
+class SignalingClient(
+    private val firestore: FirebaseFirestore,
+) {
     private val signalingScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-//    private val client = OkHttpClient()
-//    private val request = Request
-//        .Builder()
-//        .url(BuildConfig.SIGNALING_SERVER_IP_ADDRESS)
-//        .build()
+    private val ongoingCallRef = firestore.collection(FirebaseCollections.ONGOING_CALL)
 
-//    // opening web socket with signaling server
-//    private val ws = client.newWebSocket(request, SignalingWebSocketListener())
+    // session flow to send information about the session state to the subscribers
+    private val _sessionStateFlow = MutableStateFlow(WebRTCSessionState.Offline)
+    val sessionStateFlow: StateFlow<WebRTCSessionState> = _sessionStateFlow
 
-//    // session flow to send information about the session state to the subscribers
-//    private val _sessionStateFlow = MutableStateFlow(WebRTCSessionState.Offline)
-//    val sessionStateFlow: StateFlow<WebRTCSessionState> = _sessionStateFlow
+    // signaling commands to send commands to value pairs to the subscribers
+    private val _signalingCommandFlow = MutableSharedFlow<Pair<SignalingCommand, String>>()
+    val signalingCommandFlow: SharedFlow<Pair<SignalingCommand, String>> = _signalingCommandFlow
 
-//    // signaling commands to send commands to value pairs to the subscribers
-//    private val _signalingCommandFlow = MutableSharedFlow<Pair<SignalingCommand, String>>()
-//    val signalingCommandFlow: SharedFlow<Pair<SignalingCommand, String>> = _signalingCommandFlow
+    private val conversationIdStateFlow: MutableStateFlow<String> = MutableStateFlow("")
 
-    // TODO: Create signaling client to conversations and target to all conversation member
-    fun sendCommand(signalingCommand: SignalingCommand, message: String) {
-        Timber.d("[sendCommand] $signalingCommand $message")
-//        ws.send("$signalingCommand $message")
+    init {
+        conversationIdStateFlow.filterNot { it.isBlank() or it.isEmpty() }
+            .mapNotNull {
+                ongoingCallRef.document(it)
+                    .get()
+                    .await()
+                    .toObject<OnGoingCallResponse>()
+                    ?.sessionDescription
+            }.filterNot { it.isBlank() or it.isEmpty() }
+            .onEach {
+                when {
+                    it.startsWith(SignalingCommand.STATE.name, true) -> handleStateMessage(it)
+                    it.startsWith(SignalingCommand.OFFER.name, true) -> handleSignalingCommand(
+                        SignalingCommand.OFFER,
+                        it
+                    )
+
+                    it.startsWith(SignalingCommand.ANSWER.name, true) -> handleSignalingCommand(
+                        SignalingCommand.ANSWER,
+                        it
+                    )
+
+                    it.startsWith(SignalingCommand.ICE.name, true) -> handleSignalingCommand(
+                        SignalingCommand.ICE,
+                        it
+                    )
+                }
+            }
+            .launchIn(signalingScope)
     }
 
-    private inner class SignalingWebSocketListener : WebSocketListener() {
-        override fun onMessage(webSocket: WebSocket, text: String) {
-            when {
-                text.startsWith(SignalingCommand.STATE.toString(), true) ->
-                    handleStateMessage(text)
-
-                text.startsWith(SignalingCommand.OFFER.toString(), true) ->
-                    handleSignalingCommand(SignalingCommand.OFFER, text)
-
-                text.startsWith(SignalingCommand.ANSWER.toString(), true) ->
-                    handleSignalingCommand(SignalingCommand.ANSWER, text)
-
-                text.startsWith(SignalingCommand.ICE.toString(), true) ->
-                    handleSignalingCommand(SignalingCommand.ICE, text)
-            }
+    // TODO: Create signaling client to conversations and target to all conversation member
+    fun sendCommand(
+        signalingCommand: SignalingCommand,
+        sessionDescription: String,
+        conversationId: String,
+    ) {
+        conversationIdStateFlow.update { conversationId }
+        Timber.d("[sendCommand] $signalingCommand $sessionDescription")
+        signalingScope.launch {
+            Either.catch {
+                firestore.runTransaction {
+                    val onGoingCallResponse = OnGoingCallResponse(
+                        conversationId = conversationId,
+                        sessionDescription = sessionDescription,
+                        signalingCommand = signalingCommand.name,
+                    )
+                    it.set(ongoingCallRef.document(conversationId), onGoingCallResponse)
+                }.await()
+            }.onLeft { Timber.e(it) }
+                .onRight { Timber.d("Successfully sending the signaling with signalingCommand: $signalingCommand, sessionDescription: $sessionDescription, conversationId: $conversationId") }
         }
     }
 
     private fun handleStateMessage(message: String) {
         val state = getSeparatedMessage(message)
-//        _sessionStateFlow.value = WebRTCSessionState.valueOf(state)
+        _sessionStateFlow.update { WebRTCSessionState.valueOf(state) }
     }
 
     private fun handleSignalingCommand(command: SignalingCommand, text: String) {
         val value = getSeparatedMessage(text)
         Timber.d("received signaling: $command $value")
         signalingScope.launch {
-//            _signalingCommandFlow.emit(command to value)
+            _signalingCommandFlow.emit(command to value)
         }
     }
 
     private fun getSeparatedMessage(text: String) = text.substringAfter(' ')
 
     fun dispose() {
-//        _sessionStateFlow.value = WebRTCSessionState.Offline
+        _sessionStateFlow.update { WebRTCSessionState.Offline }
         signalingScope.cancel()
-//        ws.cancel()
     }
-}
-
-enum class WebRTCSessionState {
-    Active, // Offer and Answer messages has been sent
-    Creating, // Creating session, offer has been sent
-    Ready, // Both clients available and ready to initiate session
-    Impossible, // We have less than two clients connected to the server
-    Offline // unable to connect signaling server
-}
-
-enum class SignalingCommand {
-    STATE, // Command for WebRTCSessionState
-    OFFER, // to send or receive offer
-    ANSWER, // to send or receive answer
-    ICE // to send and receive ice candidates
 }

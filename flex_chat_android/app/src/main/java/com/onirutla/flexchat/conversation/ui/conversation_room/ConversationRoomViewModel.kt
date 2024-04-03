@@ -18,6 +18,7 @@ package com.onirutla.flexchat.conversation.ui.conversation_room
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.firestore.FirebaseFirestore
 import com.onirutla.flexchat.auth.domain.repository.AuthRepository
 import com.onirutla.flexchat.conversation.domain.model.Message
 import com.onirutla.flexchat.conversation.domain.repository.ConversationMemberRepository
@@ -44,6 +45,7 @@ import javax.inject.Inject
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class ConversationRoomViewModel @Inject constructor(
+    val firestore: FirebaseFirestore,
     private val conversationRepository: ConversationRepository,
     private val messageRepository: MessageRepository,
     private val authRepository: AuthRepository,

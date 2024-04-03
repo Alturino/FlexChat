@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-package com.onirutla.flexchat.conversation.ui.incoming_call
+package com.onirutla.flexchat.core.webrtc
 
-sealed interface IncomingCallScreenEvent {
-    data object OnAnswer : IncomingCallScreenEvent
-    data object OnDecline : IncomingCallScreenEvent
+enum class SignalingCommand {
+    STATE, // Command for WebRTCSessionState
+    OFFER, // to send or receive offer
+    ANSWER, // to send or receive answer
+    ICE // to send and receive ice candidates
 }

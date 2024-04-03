@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-package com.onirutla.flexchat.core.util
+package com.onirutla.flexchat.conversation.data.model
 
-object FirebaseCollections {
-    const val CONVERSATIONS = "conversations"
-    const val CONVERSATION_MEMBERS = "conversation_members"
-    const val USERS = "users"
-    const val MESSAGES = "messages"
-    const val ATTACHMENTS = "attachments"
-    const val ONGOING_CALL = "ongoing_call"
-    const val CALL_LOG = "ongoing_call"
-}
+import com.google.firebase.firestore.ServerTimestamp
+import java.sql.Timestamp
+
+data class CallLogResponse(
+    val id: String = "",
+    val duration: Int = 0,
+    @ServerTimestamp
+    val createdAt: Timestamp? = null,
+    val deletedAt: Timestamp? = null,
+)

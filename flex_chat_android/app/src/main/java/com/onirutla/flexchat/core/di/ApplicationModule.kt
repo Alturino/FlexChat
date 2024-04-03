@@ -19,6 +19,8 @@ package com.onirutla.flexchat.core.di
 import android.content.Context
 import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION_CODES
+import androidx.annotation.RequiresApi
+import androidx.core.telecom.CallsManager
 import coil.ImageLoader
 import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
@@ -80,4 +82,13 @@ object ApplicationModule {
     @Singleton
     fun provideOneTapClient(@ApplicationContext context: Context): SignInClient =
         Identity.getSignInClient(context)
+
+    @RequiresApi(VERSION_CODES.O)
+    @Provides
+    @Singleton
+    fun provideCallManager(@ApplicationContext context: Context): CallsManager {
+        return CallsManager(context).apply {
+            registerAppWithTelecom(capabilities = CallsManager.CAPABILITY_SUPPORTS_CALL_STREAMING and CallsManager.CAPABILITY_SUPPORTS_VIDEO_CALLING)
+        }
+    }
 }

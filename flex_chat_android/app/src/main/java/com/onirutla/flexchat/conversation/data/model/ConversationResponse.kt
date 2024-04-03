@@ -58,7 +58,7 @@ internal fun ConversationResponse.toConversation(
     deletedAt = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
 )
 
-internal inline fun List<ConversationResponse>.toConversations(
+internal fun List<ConversationResponse>.toConversations(
     messages: List<Message> = listOf(),
     conversationMembers: List<ConversationMember> = listOf(),
 ) = map { it.toConversation(messages = messages, conversationMembers = conversationMembers) }

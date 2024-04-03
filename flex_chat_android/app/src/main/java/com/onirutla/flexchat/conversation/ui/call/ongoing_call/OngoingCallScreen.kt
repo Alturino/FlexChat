@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.onirutla.flexchat.conversation.ui.ongoing_call
+package com.onirutla.flexchat.conversation.ui.call.ongoing_call
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -27,13 +27,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.BluetoothAudio
 import androidx.compose.material.icons.rounded.CallEnd
+import androidx.compose.material.icons.rounded.Earbuds
 import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.MicOff
+import androidx.compose.material.icons.rounded.SpeakerPhone
 import androidx.compose.material.icons.rounded.Videocam
 import androidx.compose.material.icons.rounded.VideocamOff
-import androidx.compose.material.icons.rounded.VolumeOff
-import androidx.compose.material.icons.rounded.VolumeUp
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.FilledTonalIconToggleButton
 import androidx.compose.material3.Icon
@@ -42,10 +43,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -57,10 +54,11 @@ import com.onirutla.flexchat.R
 import com.onirutla.flexchat.core.ui.theme.FlexChatTheme
 
 @Composable
-fun OngoingCallScreen(modifier: Modifier = Modifier) {
-    var isNotMute by remember { mutableStateOf(true) }
-    var isMicOn by remember { mutableStateOf(true) }
-    var isVideoCamOn by remember { mutableStateOf(false) }
+fun OngoingCallScreen(
+    modifier: Modifier = Modifier,
+    state: OngoingCallUiState,
+    onEvent: (OngoingCallEvent) -> Unit,
+) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
         contentWindowInsets = WindowInsets(
@@ -95,7 +93,7 @@ fun OngoingCallScreen(modifier: Modifier = Modifier) {
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
-                        text = "Someone is calling",
+                        text = "Someone",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -110,50 +108,74 @@ fun OngoingCallScreen(modifier: Modifier = Modifier) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
-                FilledTonalIconToggleButton(
-                    checked = isNotMute,
-                    onCheckedChange = { isNotMute = it },
-                    colors = IconButtonDefaults.filledTonalIconToggleButtonColors(
-                        checkedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        checkedContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                FilledTonalIconButton(
+                    onClick = {
+                        val audioOutputType = when (state.audioOutputType) {
+                            AudioOutputType.Bluetooth -> AudioOutputType.Speaker
+                            AudioOutputType.Speaker -> AudioOutputType.Earbuds
+                            AudioOutputType.Earbuds -> AudioOutputType.Bluetooth
+                        }
+                        onEvent(OngoingCallEvent.OnAudioOutputChanged(audioOutputType))
+                    },
+                    colors = IconButtonDefaults.filledTonalIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                 ) {
-                    if (isNotMute) {
-                        Icon(imageVector = Icons.Rounded.VolumeUp, contentDescription = null)
-                    } else {
-                        Icon(imageVector = Icons.Rounded.VolumeOff, contentDescription = null)
+                    when (state.audioOutputType) {
+                        AudioOutputType.Bluetooth -> {
+                            Icon(
+                                imageVector = Icons.Rounded.BluetoothAudio,
+                                contentDescription = null
+                            )
+                        }
+
+                        AudioOutputType.Speaker -> {
+                            Icon(
+                                imageVector = Icons.Rounded.SpeakerPhone,
+                                contentDescription = null
+                            )
+                        }
+
+                        AudioOutputType.Earbuds -> {
+                            Icon(imageVector = Icons.Rounded.Earbuds, contentDescription = null)
+                        }
                     }
                 }
                 FilledTonalIconToggleButton(
-                    checked = isVideoCamOn,
-                    onCheckedChange = { isVideoCamOn = it },
+                    checked = state.isCameraEnabled,
+                    onCheckedChange = { onEvent(OngoingCallEvent.OnIsCameraEnabledChange(it)) },
                     colors = IconButtonDefaults.filledTonalIconToggleButtonColors(
-                        checkedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        checkedContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        checkedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        checkedContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                 ) {
-                    if (isVideoCamOn) {
+                    if (state.isCameraEnabled) {
                         Icon(imageVector = Icons.Rounded.Videocam, contentDescription = null)
                     } else {
                         Icon(imageVector = Icons.Rounded.VideocamOff, contentDescription = null)
                     }
                 }
                 FilledTonalIconToggleButton(
-                    checked = isMicOn,
-                    onCheckedChange = { isMicOn = it },
+                    checked = state.isMicEnabled,
+                    onCheckedChange = { onEvent(OngoingCallEvent.OnMicEnabledChanged(it)) },
                     colors = IconButtonDefaults.filledTonalIconToggleButtonColors(
-                        checkedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        checkedContentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        checkedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        checkedContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 ) {
-                    if (!isMicOn) {
-                        Icon(imageVector = Icons.Rounded.MicOff, contentDescription = null)
-                    } else {
-                        Icon(imageVector = Icons.Rounded.Mic, contentDescription = null)
+                    when (state.isMicEnabled) {
+                        true -> {
+                            Icon(imageVector = Icons.Rounded.Mic, contentDescription = null)
+                        }
+
+                        false -> {
+                            Icon(imageVector = Icons.Rounded.MicOff, contentDescription = null)
+                        }
                     }
                 }
                 FilledTonalIconButton(
-                    onClick = { /*TODO*/ },
+                    onClick = { onEvent(OngoingCallEvent.OnCallEnd) },
                     colors = IconButtonDefaults.filledTonalIconButtonColors(
                         contentColor = MaterialTheme.colorScheme.error,
                         containerColor = MaterialTheme.colorScheme.errorContainer,
@@ -170,6 +192,6 @@ fun OngoingCallScreen(modifier: Modifier = Modifier) {
 @Composable
 private fun OutgoingCallScreenPreview() {
     FlexChatTheme {
-        OngoingCallScreen()
+        OngoingCallScreen(state = OngoingCallUiState(), onEvent = {})
     }
 }

@@ -20,17 +20,21 @@ import org.webrtc.AddIceObserver
 import org.webrtc.IceCandidate
 import org.webrtc.PeerConnection
 import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
 suspend fun PeerConnection.addRtcIceCandidate(
     iceCandidate: IceCandidate,
-): Unit = suspendCoroutine {
+): Result<Unit> = suspendCoroutine { cont ->
     addIceCandidate(
         iceCandidate,
         object : AddIceObserver {
-            override fun onAddSuccess() = it.resume(Unit)
-            override fun onAddFailure(p0: String?) = it.resumeWithException(RuntimeException(p0))
+            override fun onAddSuccess() {
+                cont.resume(Result.success(Unit))
+            }
+
+            override fun onAddFailure(error: String?) {
+                cont.resume(Result.failure(RuntimeException(error)))
+            }
         }
     )
 }

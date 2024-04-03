@@ -14,14 +14,9 @@
  * limitations under the License.
  */
 
-package com.onirutla.flexchat.core.util
+package com.onirutla.flexchat.conversation.ui.call.incoming_call
 
-object FirebaseCollections {
-    const val CONVERSATIONS = "conversations"
-    const val CONVERSATION_MEMBERS = "conversation_members"
-    const val USERS = "users"
-    const val MESSAGES = "messages"
-    const val ATTACHMENTS = "attachments"
-    const val ONGOING_CALL = "ongoing_call"
-    const val CALL_LOG = "ongoing_call"
+sealed interface IncomingCallScreenEvent {
+    data object OnAnswer : IncomingCallScreenEvent
+    data object OnDecline : IncomingCallScreenEvent
 }

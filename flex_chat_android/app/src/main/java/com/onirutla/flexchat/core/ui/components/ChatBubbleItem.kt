@@ -80,7 +80,7 @@ fun ChatBubbleItem(modifier: Modifier = Modifier, message: Message, isMySelf: Bo
                 )
                 Text(
                     modifier = Modifier.align(Alignment.End),
-                    text = message.createdAt?.format().orEmpty(),
+                    text = message.createdAt.format(),
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Medium
                 )

@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-package com.onirutla.flexchat.core.util
+package com.onirutla.flexchat.core.webrtc
 
-object FirebaseCollections {
-    const val CONVERSATIONS = "conversations"
-    const val CONVERSATION_MEMBERS = "conversation_members"
-    const val USERS = "users"
-    const val MESSAGES = "messages"
-    const val ATTACHMENTS = "attachments"
-    const val ONGOING_CALL = "ongoing_call"
-    const val CALL_LOG = "ongoing_call"
+enum class WebRTCSessionState {
+    Active, // Offer and Answer messages has been sent
+    Creating, // Creating session, offer has been sent
+    Ready, // Both clients available and ready to initiate session
+    Impossible, // We have less than two clients connected to the server
+    Offline // unable to connect signaling server
 }

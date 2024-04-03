@@ -32,6 +32,7 @@ data class Conversation(
     val conversationMemberIds: List<String> = listOf(),
     val attachments: List<Attachment> = listOf(),
     val attachmentIds: List<String> = listOf(),
+    val ongoingCallId: String = "",
     val messages: List<Message> = conversationMembers.flatMap { it.messages }
         .sortedByDescending { it.createdAt },
     val messageIds: List<String> = listOf(),

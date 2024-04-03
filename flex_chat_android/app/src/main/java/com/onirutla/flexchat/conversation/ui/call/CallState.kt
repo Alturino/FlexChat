@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-package com.onirutla.flexchat.core.util
+package com.onirutla.flexchat.conversation.ui.call
 
-object FirebaseCollections {
-    const val CONVERSATIONS = "conversations"
-    const val CONVERSATION_MEMBERS = "conversation_members"
-    const val USERS = "users"
-    const val MESSAGES = "messages"
-    const val ATTACHMENTS = "attachments"
-    const val ONGOING_CALL = "ongoing_call"
-    const val CALL_LOG = "ongoing_call"
+sealed interface CallState {
+    data class Incoming(val callerName: String = "Placeholder") : CallState
+    data class Outgoing(val outgoingName: String = "Placeholder") : CallState
+    data object None : CallState
+    data object UnRegistered : CallState
+    data object Initial : CallState
 }
