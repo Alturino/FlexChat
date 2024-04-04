@@ -27,7 +27,6 @@ import com.google.firebase.firestore.toObject
 import com.google.firebase.firestore.toObjects
 import com.onirutla.flexchat.conversation.data.model.ConversationMemberResponse
 import com.onirutla.flexchat.conversation.data.model.toConversationMember
-import com.onirutla.flexchat.conversation.data.model.toConversationMembers
 import com.onirutla.flexchat.conversation.domain.model.ConversationMember
 import com.onirutla.flexchat.conversation.domain.model.Message
 import com.onirutla.flexchat.conversation.domain.repository.ConversationMemberRepository
@@ -36,7 +35,6 @@ import com.onirutla.flexchat.core.util.FirebaseCollections
 import com.onirutla.flexchat.user.data.model.UserResponse
 import com.onirutla.flexchat.user.domain.repository.UserRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
@@ -102,24 +100,6 @@ internal class FirebaseConversationMemberRepository @Inject constructor(
         return res
     }
 
-    override fun conversationMemberByConversationIdFlow(conversationId: String): Flow<List<ConversationMember>> {
-        val conversationMemberResponse = conversationMemberRef
-            .whereEqualTo("conversationId", conversationId)
-            .snapshots()
-            .map { it.toObjects<ConversationMemberResponse>() }
-
-        val message = messageRepository.messageByConversationIdFlow(conversationId)
-
-        return combine(
-            conversationMemberResponse,
-            message
-        ) { conversationMemberResponses: List<ConversationMemberResponse>, messages: List<Message> ->
-            conversationMemberResponses.map { response ->
-                response.toConversationMember(messages.filter { it.conversationMemberId == response.id })
-            }
-        }
-    }
-
     override suspend fun conversationMemberById(
         id: String,
     ): Either<Throwable, ConversationMember> = Either.catch {
@@ -133,20 +113,6 @@ internal class FirebaseConversationMemberRepository @Inject constructor(
             }
         conversationMemberResponse.toConversationMember(messages = messages)
     }
-
-    override fun conversationMemberByIdFlow(
-        id: String,
-    ): Flow<List<ConversationMember>> = conversationMemberRef.whereEqualTo("id", id)
-        .snapshots()
-        .map { snapshot ->
-            val conversationMember = snapshot.toObjects<ConversationMemberResponse>()
-            val messageIds = conversationMember.flatMap { it.messageIds }
-            conversationMember.toConversationMembers(
-                messages = messageIds.map { messageId ->
-                    messageRepository.messageById(messageId).getOrElse { throw it }
-                }
-            )
-        }.catch { Timber.e(it) }
 
     override suspend fun conversationMemberByConversationId(
         conversationId: String,

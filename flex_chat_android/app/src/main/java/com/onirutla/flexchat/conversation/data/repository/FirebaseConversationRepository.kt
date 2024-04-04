@@ -38,6 +38,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.tasks.await
@@ -56,109 +57,6 @@ internal class FirebaseConversationRepository @Inject constructor(
     private val conversationMemberRef =
         firestore.collection(FirebaseCollections.CONVERSATION_MEMBERS)
 
-    //    override suspend fun getConversationByUserId(
-//        userId: String,
-//    ): Either<Throwable, List<Conversation>> = either {
-//        ensure(userId.isNotEmpty() or userId.isNotBlank()) {
-//            raise(IllegalArgumentException("User id should not be empty or null"))
-//        }
-//
-//        val userAsConversationMembers = conversationMemberRepository
-//            .getConversationMemberByUserId(userId)
-//            .onLeft { raise(it) }
-//            .getOrNull()
-//        ensure(!userAsConversationMembers.isNullOrEmpty()) {
-//            raise(NullPointerException("User as conversation members should not be empty or null"))
-//        }
-//
-//        val conversations = userAsConversationMembers.flatMap { userAsConversationMember ->
-//            conversationRef.whereEqualTo("id", userAsConversationMember.conversationId)
-//                .orderBy("createdAt", Query.Direction.DESCENDING)
-//                .get()
-//                .await()
-//                .toObjects<ConversationResponse>()
-//                .map { conversationResponse ->
-//                    val conversationMembers = conversationMemberRepository
-//                        .getConversationMemberByConversationId(conversationResponse.id)
-//                        .onLeft { raise(it) }
-//                        .getOrNull()
-//                    ensure(!conversationMembers.isNullOrEmpty()) {
-//                        NullPointerException("Conversation members should not be null")
-//                    }
-//
-//                    conversationResponse.toConversation(
-//                        conversationMembers = conversationMembers,
-//                        messages = conversationMembers.flatMap { it.messages }
-//                            .sortedByDescending { it.createdAt },
-//                    )
-//                }
-//        }.sortedByDescending { it.latestMessage.createdAt }
-//        conversations
-//    }
-//
-//
-//    override suspend fun observeConversationByUserId(userId: String): Flow<List<Conversation>> {
-//        val conversationByUserId = conversationMemberRepository
-//            .observeConversationMemberByUserId(userId)
-//            .mapLatest { conversationMembers ->
-//                conversationMembers.parMapNotNull { conversationMember ->
-//                    val conversation = getConversationById(conversationMember.conversationId)
-//                        .onLeft { Timber.e(it) }
-//                        .onRight { Timber.d("conversation: $it") }
-//                        .getOrNull()
-//                    conversation?.copy(
-//                        conversationName = conversation.conversationName.split(" ")
-//                            .filterNot { it == conversationMember.username }
-//                            .joinToString("")
-//                    )
-//                }
-//            }
-//
-//        return combine(
-//            conversationByUserId,
-//            messageRepository.observeMessage
-//        ) { conversations, messages ->
-//            conversations.parMap { conversation ->
-//                val filteredMessages = messages.filter { it.conversationId == conversation.id }
-//                conversation.copy(
-//                    messages = filteredMessages,
-//                    latestMessage = filteredMessages.maxByOrNull { it.createdAt } ?: Message()
-//                )
-//            }
-//        }
-//    }
-//
-//
-//    override suspend fun getConversationById(
-//        conversationId: String,
-//    ): Either<Throwable, Conversation> = either {
-//        val conversationMembers = conversationMemberRepository
-//            .getConversationMemberByConversationId(conversationId)
-//            .bind()
-//
-//        ensure(conversationMembers.isNotEmpty()) {
-//            NullPointerException("conversation members should not be null or empty")
-//        }
-//
-//        val conversation = Either.catch {
-//            conversationRef
-//                .document(conversationId)
-//                .get()
-//                .await()
-//                .toObject<ConversationResponse>()
-//                ?.toConversation(
-//                    conversationMembers = conversationMembers,
-//                    messages = conversationMembers.flatMap { it.messages }
-//                        .sortedByDescending { it.createdAt }
-//                )
-//        }.bind()
-//        ensureNotNull(conversation) {
-//            NullPointerException("Conversation should not be null")
-//        }
-//
-//        conversation
-//    }
-//
     override suspend fun conversationByUserId(
         userId: String,
     ): Either<Throwable, List<Conversation>> = coroutineScope {
@@ -257,29 +155,26 @@ internal class FirebaseConversationRepository @Inject constructor(
         }
     }
 
-    override fun conversationByUserIdFlow(
+    override fun conversationsByUserIdFlow(
         userId: String,
-    ): Flow<List<Conversation>> = conversationRef
-        .whereArrayContains("userIds", userId)
-        .snapshots()
-        .map { snapshot ->
-            val conversationResponses = snapshot.toObjects<ConversationResponse>()
-            val messages = conversationResponses.flatMap { it.messageIds }
-                .map { messageId ->
-                    messageRepository.messageById(messageId).getOrElse { throw it }
-                }
-            val conversationMember = conversationResponses.flatMap { it.conversationMemberIds }
-                .map { conversationMemberId ->
-                    conversationMemberRepository
-                        .conversationMemberById(conversationMemberId)
-                        .getOrElse { throw it }
-                }
-            conversationResponses.toConversations(
-                messages = messages,
-                conversationMembers = conversationMember,
-            )
+    ): Flow<List<Conversation>> {
+        val conversations = conversationRef
+            .whereArrayContains("userIds", userId)
+            .snapshots()
+            .map { snapshot -> snapshot.toObjects<ConversationResponse>() }
+            .onEach { Timber.d("$it") }
+            .catch { Timber.e(it) }
+
+        val conversationMembers =
+            conversationMemberRepository.conversationMemberByUserIdFlow(userId)
+        val messages = messageRepository.messageByUserIdFlow(userId)
+        return combine(
+            conversations,
+            conversationMembers,
+            messages
+        ) { conversations, conversationMembers, messages ->
+            conversations.toConversations(messages, conversationMembers)
         }
-        .onEach { Timber.d("$it") }
-        .catch { Timber.e(it) }
+    }
 
 }

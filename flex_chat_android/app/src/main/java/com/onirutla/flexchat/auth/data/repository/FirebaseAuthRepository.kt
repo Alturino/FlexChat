@@ -19,7 +19,6 @@ package com.onirutla.flexchat.auth.data.repository
 import android.content.Intent
 import android.content.IntentSender
 import arrow.core.Either
-import arrow.core.getOrElse
 import arrow.core.raise.either
 import arrow.core.raise.ensure
 import arrow.core.raise.ensureNotNull
@@ -31,6 +30,8 @@ import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.toObject
 import com.onirutla.flexchat.auth.domain.repository.AuthRepository
+import com.onirutla.flexchat.auth.login.domain.data.LoginRequest
+import com.onirutla.flexchat.auth.register.domain.data.RegisterRequest
 import com.onirutla.flexchat.core.util.FirebaseCollections
 import com.onirutla.flexchat.core.util.FirebaseSecret.SIGN_IN_CLIENT_SERVER_CLIENT_ID
 import com.onirutla.flexchat.core.util.firebaseUserFlow
@@ -42,7 +43,9 @@ import com.onirutla.flexchat.user.domain.repository.UserRepository
 import com.onirutla.flexchat.user.util.toUserResponse
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.filterNot
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
@@ -64,11 +67,11 @@ internal class FirebaseAuthRepository @Inject constructor(
     private val _currentUser: Flow<FirebaseUser?> = firebaseAuth.firebaseUserFlow
         .onEach { Timber.d("FirebaseUser: $it") }
 
-    override val currentUser: Flow<User> = _currentUser.filterNotNull()
+    override val currentUserFlow: Flow<User> = _currentUser.filterNotNull()
         .mapNotNull { firebaseUser ->
-            userRepository.getUserById(firebaseUser.uid)
-                .getOrElse { throw it }
+            userRepository.getUserById(firebaseUser.uid).getOrNull()
         }
+        .filterNot { it == User() }
         .catch { Timber.e(it) }
         .onEach { Timber.d("User from firestore: $it") }
 
@@ -80,20 +83,23 @@ internal class FirebaseAuthRepository @Inject constructor(
     }
 
     override suspend fun loginWithEmailAndPassword(
-        email: String,
-        password: String,
+        request: LoginRequest,
     ): Either<Throwable, User> = either {
-        ensure(email.isNotBlank() or email.isNotEmpty()) {
-            IllegalArgumentException("Email should not be blank or empty")
-        }
-        ensure(password.isNotBlank() or password.isNotEmpty()) {
-            IllegalArgumentException("Password should not be blank or empty")
+        with(request) {
+            ensure(email.isNotBlank() or email.isNotEmpty()) {
+                IllegalArgumentException("Email should not be blank or empty")
+            }
+            ensure(password.isNotBlank() or password.isNotEmpty()) {
+                IllegalArgumentException("Password should not be blank or empty")
+            }
         }
 
         val firebaseUser = Either.catch {
-            firebaseAuth.signInWithEmailAndPassword(email, password)
-                .await()
-                .user
+            with(request) {
+                firebaseAuth.signInWithEmailAndPassword(email, password)
+                    .await()
+                    .user
+            }
         }.onLeft { Timber.e(it) }
             .bind()
 
@@ -108,17 +114,20 @@ internal class FirebaseAuthRepository @Inject constructor(
                     .toObject<UserResponse>()!!
                     .toUser()
 
-                it.set(
-                    userRef.document(user.id),
-                    user.toUserResponse().copy(username = email, email = email, password = password)
-                )
+                with(request) {
+                    it.set(
+                        userRef.document(user.id),
+                        user.toUserResponse()
+                            .copy(username = email, email = email, password = password)
+                    )
+                }
                 user
             }.await()
         }.onLeft { signOut() }
             .bind()
     }
 
-    override suspend fun getSignInIntentSender(): Either<Throwable, IntentSender> {
+    override suspend fun getSignInIntentSender(): Either<Throwable, IntentSender> = Either.catch {
         val googleIdRequestOptions = BeginSignInRequest.GoogleIdTokenRequestOptions.builder()
             .setSupported(true)
             .setFilterByAuthorizedAccounts(false)
@@ -129,13 +138,11 @@ internal class FirebaseAuthRepository @Inject constructor(
             .setGoogleIdTokenRequestOptions(googleIdRequestOptions)
             .build()
 
-        return Either.catch {
-            signInClient.beginSignIn(signInRequest)
-                .await()
-                .pendingIntent
-                .intentSender
-        }.onLeft { Timber.e(it) }
-    }
+        signInClient.beginSignIn(signInRequest)
+            .await()
+            .pendingIntent
+            .intentSender
+    }.onLeft { Timber.e(it) }
 
     override suspend fun loginWithGoogle(intent: Intent): Either<Throwable, User> = either {
         val signInCredential = Either.catch { signInClient.getSignInCredentialFromIntent(intent) }
@@ -180,25 +187,28 @@ internal class FirebaseAuthRepository @Inject constructor(
         }.bind()
     }
 
-    override suspend fun registerWithEmailAndPassword(
-        username: String,
-        email: String,
-        password: String,
-    ): Either<Throwable, User> = either {
-        ensure(username.isNotBlank() or email.isNotEmpty()) {
-            raise(IllegalArgumentException("Username should not be blank or empty"))
-        }
-        ensure(email.isNotBlank() or email.isNotEmpty()) {
-            raise(IllegalArgumentException("Email should not be blank or empty"))
-        }
-        ensure(password.isNotBlank() or password.isNotEmpty()) {
-            raise(IllegalArgumentException("Password should not be blank or empty"))
-        }
+    override suspend fun getCurrentUser(): User = currentUserFlow.first()
 
+    override suspend fun registerWithEmailAndPassword(
+        request: RegisterRequest,
+    ): Either<Throwable, User> = either {
+        with(request) {
+            ensure(username.isNotBlank() or email.isNotEmpty()) {
+                IllegalArgumentException("Username should not be blank or empty")
+            }
+            ensure(email.isNotBlank() or email.isNotEmpty()) {
+                IllegalArgumentException("Email should not be blank or empty")
+            }
+            ensure(password.isNotBlank() or password.isNotEmpty()) {
+                IllegalArgumentException("Password should not be blank or empty")
+            }
+        }
         val firebaseUser = Either.catch {
-            firebaseAuth.createUserWithEmailAndPassword(email, password)
-                .await()
-                .user
+            with(request) {
+                firebaseAuth.createUserWithEmailAndPassword(email, password)
+                    .await()
+                    .user
+            }
         }.bind()
 
         ensureNotNull(firebaseUser) {
@@ -207,11 +217,13 @@ internal class FirebaseAuthRepository @Inject constructor(
 
         Either.catch {
             firestore.runTransaction {
-                val userResponse = firebaseUser.toUserResponse().copy(
-                    username = username,
-                    email = email,
-                    password = password
-                )
+                val userResponse = with(request) {
+                    firebaseUser.toUserResponse().copy(
+                        username = username,
+                        email = email,
+                        password = password
+                    )
+                }
                 it.set(userRef.document(userResponse.id), userResponse)
                 userResponse.toUser()
             }.await()

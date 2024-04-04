@@ -31,6 +31,14 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.FlexChat"
         tools:targetApi="31">
+        <receiver
+            android:name=".core.webrtc.CallBroadcast"
+            android:enabled="true"
+            android:exported="true" />
+        <service
+            android:name=".core.CallService"
+            android:enabled="true"
+            android:exported="true" />
 
         <activity
             android:name=".MainActivity"
@@ -42,19 +50,20 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <activity
             android:name=".conversation.ui.call.CallActivity"
+            android:excludeFromRecents="true"
             android:exported="false"
-            android:finishOnTaskLaunch="true"
-            android:launchMode="singleInstance" />
+            android:launchMode="singleInstance"
+            android:parentActivityName=".MainActivity"
+            android:taskAffinity="" />
 
         <meta-data
             android:name="firebase_performance_logcat_enabled"
             android:value="true" />
 
         <service
-            android:name=".core.PushNotificationService"
+            android:name=".core.ChatNotificationService"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />

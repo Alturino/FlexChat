@@ -90,6 +90,7 @@ class SignalingClient(
         signalingCommand: SignalingCommand,
         sessionDescription: String,
         conversationId: String,
+        callInitiatorId: String,
     ) {
         conversationIdStateFlow.update { conversationId }
         Timber.d("[sendCommand] $signalingCommand $sessionDescription")
@@ -100,6 +101,7 @@ class SignalingClient(
                         conversationId = conversationId,
                         sessionDescription = sessionDescription,
                         signalingCommand = signalingCommand.name,
+                        callInitiatorId = callInitiatorId
                     )
                     it.set(ongoingCallRef.document(conversationId), onGoingCallResponse)
                 }.await()
@@ -125,6 +127,12 @@ class SignalingClient(
 
     fun dispose() {
         _sessionStateFlow.update { WebRTCSessionState.Offline }
+        firestore.runTransaction {
+            it.delete(
+                firestore.collection(FirebaseCollections.ONGOING_CALL)
+                    .document(conversationIdStateFlow.value)
+            )
+        }
         signalingScope.cancel()
     }
 }

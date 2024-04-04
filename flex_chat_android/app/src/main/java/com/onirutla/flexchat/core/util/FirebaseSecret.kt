@@ -24,5 +24,5 @@ object FirebaseSecret {
     const val STORAGE_BUCKET = BuildConfig.STORAGE_BUCKET
     const val PROJECT_ID = BuildConfig.PROJECT_ID
     const val SIGN_IN_CLIENT_SERVER_CLIENT_ID = BuildConfig.SIGN_IN_CLIENT_SERVER_CLIENT_ID
-    const val EMULATOR_HOST = "192.168.1.5"
+    const val EMULATOR_HOST = "10.0.2.2"
 }

@@ -25,32 +25,36 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.onirutla.flexchat.MainActivity
 import com.onirutla.flexchat.R
 import com.onirutla.flexchat.auth.domain.repository.AuthRepository
 import com.onirutla.flexchat.conversation.domain.repository.ConversationRepository
-import com.onirutla.flexchat.core.util.NotificationConstants.CHAT_NOTIFICATION_CHANNEL_ID
-import com.onirutla.flexchat.core.util.NotificationConstants.CHAT_NOTIFICATION_CHANNEL_NAME
-import com.onirutla.flexchat.core.util.NotificationConstants.CHAT_NOTIFICATION_ID
+import com.onirutla.flexchat.core.util.NotificationConstants
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.filterNot
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import timber.log.Timber
 import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
 
 @AndroidEntryPoint
-class PushNotificationService : FirebaseMessagingService() {
+class CallNotificationService : FirebaseMessagingService() {
 
     @Inject
-    lateinit var conversationRepository: ConversationRepository
+    lateinit var firestore: FirebaseFirestore
 
     @Inject
     lateinit var authRepository: AuthRepository
+
+    @Inject
+    lateinit var conversationRepository: ConversationRepository
 
     private val coroutineScope = CoroutineScope(SupervisorJob())
 
@@ -67,12 +71,9 @@ class PushNotificationService : FirebaseMessagingService() {
 
         val title = message.notification?.title.orEmpty()
         val body = message.notification?.body.orEmpty()
-        authRepository.currentUser
-            .onEach {
-                if (it.id != message.data["userId"]) {
-                    sendNotification(title, body)
-                }
-            }
+        authRepository.currentUserFlow
+            .filterNot { it.ongoingCallId.isEmpty() or it.ongoingCallId.isBlank() }
+            .onEach {  }
             .launchIn(coroutineScope)
     }
 
@@ -80,25 +81,30 @@ class PushNotificationService : FirebaseMessagingService() {
         val contentIntent = Intent(applicationContext, MainActivity::class.java)
         val contentPendingIntent = PendingIntent.getActivity(
             applicationContext,
-            CHAT_NOTIFICATION_ID,
+            NotificationConstants.CALL_NOTIFICATION_ID,
             contentIntent,
             PendingIntent.FLAG_IMMUTABLE
         )
 
-        val notification = NotificationCompat.Builder(applicationContext, CHAT_NOTIFICATION_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+        val notification = NotificationCompat.Builder(
+            applicationContext,
+            NotificationConstants.CALL_NOTIFICATION_CHANNEL_ID
+        ).setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(title)
             .setContentText(notificationBody)
             .setContentIntent(contentPendingIntent)
             .setAutoCancel(true)
-            .setChannelId(CHAT_NOTIFICATION_CHANNEL_ID)
+            .setChannelId(NotificationConstants.CALL_NOTIFICATION_CHANNEL_ID)
             .build()
 
         val notificationManager = NotificationManagerCompat.from(applicationContext)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val notificationChannel = NotificationChannelCompat
-                .Builder(CHAT_NOTIFICATION_CHANNEL_ID, NotificationManagerCompat.IMPORTANCE_DEFAULT)
-                .setName(CHAT_NOTIFICATION_CHANNEL_NAME)
+                .Builder(
+                    NotificationConstants.CALL_NOTIFICATION_CHANNEL_ID,
+                    NotificationManagerCompat.IMPORTANCE_DEFAULT
+                )
+                .setName(NotificationConstants.CHAT_NOTIFICATION_CHANNEL_NAME)
                 .build()
             notificationManager.createNotificationChannel(notificationChannel)
         }
@@ -109,11 +115,12 @@ class PushNotificationService : FirebaseMessagingService() {
         ) {
             return
         }
-        notificationManager.notify(CHAT_NOTIFICATION_ID, notification)
+        notificationManager.notify(NotificationConstants.CALL_NOTIFICATION_ID, notification)
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        coroutineScope.cancel()
+        coroutineScope.cancel(CancellationException("CallNotificationService is destroyed"))
     }
+
 }

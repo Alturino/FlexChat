@@ -89,9 +89,9 @@ internal class FirebaseMessageRepository @Inject constructor(
     ): Flow<List<Message>> = messageRef.whereEqualTo("conversationId", conversationId)
         .snapshots()
         .map { snapshot ->
-            snapshot.toObjects<MessageResponse>()
-                .parMap { it.toMessage() }
-        }.onEach { Timber.d("messageByConversationIdFlow: $it") }
+            snapshot.toObjects<MessageResponse>().parMap { it.toMessage() }
+        }
+        .onEach { Timber.d("messageByConversationIdFlow: $it") }
         .catch { Timber.e(it) }
 
     override suspend fun messageByConversationMemberId(
@@ -103,20 +103,6 @@ internal class FirebaseMessageRepository @Inject constructor(
             .toObjects<MessageResponse>()
             .toMessages()
     }
-
-    override fun messageByUserIdAndConversationIdFlow(userId: String, conversationId: String): Flow<List<Message>> =
-        messageRef.whereEqualTo("userId", userId)
-            .whereEqualTo("conversationId", conversationId)
-            .snapshots()
-            .map { it.toObjects<MessageResponse>().toMessages() }
-            .onEach { Timber.d("messages: $it") }
-            .catch { Timber.e(it) }
-
-    override suspend fun messageByConversationMemberIdFlow(
-        conversationMemberId: String,
-    ): Flow<List<Message>> = messageRef.whereEqualTo("conversationMemberId", conversationMemberId)
-        .snapshots()
-        .map { it.toObjects<MessageResponse>().toMessages() }
 
     override suspend fun sendMessage(messageRequest: Message): Either<Throwable, Message> = either {
         with(messageRequest) {

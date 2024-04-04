@@ -31,6 +31,4 @@ interface MessageRepository {
     suspend fun sendMessageWithAttachment(message: Message, uri: Uri): Either<Throwable, Unit>
     fun messageByUserIdFlow(userId: String): Flow<List<Message>>
     val observeMessage: Flow<List<Message>>
-    suspend fun messageByConversationMemberIdFlow(conversationMemberId: String): Flow<List<Message>>
-    fun messageByUserIdAndConversationIdFlow(userId: String, conversationId: String): Flow<List<Message>>
 }

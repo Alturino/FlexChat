@@ -77,7 +77,7 @@ class ConversationRoomViewModel @Inject constructor(
     }
 
     init {
-        authRepository.currentUser
+        authRepository.currentUserFlow
             .filterNot { it == User() }
             .onEach { user -> _state.update { it.copy(currentUser = user) } }
             .launchIn(viewModelScope)

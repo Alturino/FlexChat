@@ -29,7 +29,7 @@ import androidx.navigation.compose.rememberNavController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
-import com.onirutla.flexchat.auth.ui.AuthViewModel
+import com.onirutla.flexchat.auth.ui.MainActivityViewModel
 import com.onirutla.flexchat.auth.ui.authNavGraph
 import com.onirutla.flexchat.conversation.ui.conversationNavGraph
 import com.onirutla.flexchat.core.ui.Screens
@@ -40,11 +40,10 @@ fun FlexChatNavigation(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
 ) {
-    val authVm: AuthViewModel = hiltViewModel()
-    val isLoggedIn by authVm.isLoggedIn.collectAsStateWithLifecycle(null)
-    val currentDestination by navController.currentBackStackEntryFlow.collectAsStateWithLifecycle(
-        initialValue = null
-    )
+    val mainVm: MainActivityViewModel = hiltViewModel()
+    val isLoggedIn by mainVm.isLoggedIn.collectAsStateWithLifecycle()
+    val currentDestination by navController.currentBackStackEntryFlow
+        .collectAsStateWithLifecycle(initialValue = null)
 
     LaunchedEffect(key1 = isLoggedIn) {
         if (isLoggedIn == true) {
@@ -64,6 +63,7 @@ fun FlexChatNavigation(
             }
         }
     }
+
 
     val notificationPermissionState = rememberPermissionState(
         permission = Manifest.permission.POST_NOTIFICATIONS

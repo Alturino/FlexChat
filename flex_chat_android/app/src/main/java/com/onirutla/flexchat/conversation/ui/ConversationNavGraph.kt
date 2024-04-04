@@ -16,6 +16,7 @@
 
 package com.onirutla.flexchat.conversation.ui
 
+import android.content.Intent
 import android.net.Uri
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -33,6 +34,7 @@ import androidx.navigation.navigation
 import com.onirutla.flexchat.conversation.ui.add_new_conversation.AddNewConversationScreen
 import com.onirutla.flexchat.conversation.ui.add_new_conversation.AddNewConversationUiEvent
 import com.onirutla.flexchat.conversation.ui.add_new_conversation.AddNewConversationViewModel
+import com.onirutla.flexchat.conversation.ui.call.CallActivity
 import com.onirutla.flexchat.conversation.ui.camera.CameraScreen
 import com.onirutla.flexchat.conversation.ui.confirmation_send_photo.ConfirmationSendPhotoScreen
 import com.onirutla.flexchat.conversation.ui.confirmation_send_photo.ConfirmationSendPhotoUiEvent
@@ -51,6 +53,7 @@ import com.onirutla.flexchat.core.webrtc.WebRtcSessionManagerImpl
 import com.onirutla.flexchat.ui.screens.profile_screen.ProfileScreenViewModel
 import com.onirutla.flexchat.user.ui.profile_screen.ProfileScreen
 import com.onirutla.flexchat.user.ui.profile_screen.ProfileScreenUiEvent
+import timber.log.Timber
 
 fun NavGraphBuilder.conversationNavGraph(navController: NavHostController) {
     navigation(
@@ -164,12 +167,13 @@ fun NavGraphBuilder.conversationNavGraph(navController: NavHostController) {
                 vm(conversationId)
             }
 
+            val context = LocalContext.current
 
             ConversationRoomScreen(
                 state = state,
                 onEvent = vm::onEvent,
-                onUiEvent = {
-                    when (it) {
+                onUiEvent = { event ->
+                    when (event) {
                         ConversationRoomUiEvent.OnNavigateUp -> {
                             navController.navigateUp()
                         }
@@ -192,8 +196,13 @@ fun NavGraphBuilder.conversationNavGraph(navController: NavHostController) {
 
                         // TODO: Implement voice and or video chat
                         ConversationRoomUiEvent.OnCallClick -> {
-                            navController.navigate(Screens.Conversation.CallScreen.route)
-
+                            Intent(context, CallActivity::class.java).apply {
+                                putExtra("conversationId", state.conversation.id)
+                                putExtra("callInitiatorId", state.currentUser.id)
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }.also {
+                                context.startActivity(it)
+                            }
                         }
 
                         ConversationRoomUiEvent.OnVideoCallClick -> {
@@ -274,14 +283,17 @@ fun NavGraphBuilder.conversationNavGraph(navController: NavHostController) {
         ) {
             val context = LocalContext.current
             val vm: ConversationRoomViewModel = hiltViewModel()
+            val state by vm.state.collectAsStateWithLifecycle()
 
             val conversationId = it.arguments?.getString("conversationId", "").orEmpty()
             val callSession: WebRtcSessionManager = rememberSaveable {
+                Timber.d(state.currentUser.id)
                 WebRtcSessionManagerImpl(
                     context = context,
                     signalingClient = SignalingClient(vm.firestore),
                     peerConnectionFactory = FlexChatPeerConnectionFactory(context),
-                    conversationId = conversationId
+                    conversationId = conversationId,
+                    callInitiatorId = state.currentUser.id
                 )
             }
 

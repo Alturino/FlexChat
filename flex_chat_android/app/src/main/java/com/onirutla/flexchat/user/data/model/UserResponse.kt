@@ -37,6 +37,7 @@ internal data class UserResponse(
     val photoProfileUrl: String = "",
     val conversationIds: List<String> = listOf(),
     val conversationMemberIds: List<String> = listOf(),
+    val ongoingCallId: String = "",
     val status: String = "",
     val isOnline: Boolean = false,
     @ServerTimestamp

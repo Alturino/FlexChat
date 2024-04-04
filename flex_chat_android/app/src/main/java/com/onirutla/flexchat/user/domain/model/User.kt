@@ -36,6 +36,7 @@ data class User(
     val photoProfileUrl: String = "",
     val phoneNumber: String = "",
     val status: String = "",
+    val ongoingCallId: String = "",
     val isOnline: Boolean? = null,
     val conversationIds: List<String> = listOf(),
     val conversations: List<Conversation> = listOf(),
@@ -58,14 +59,10 @@ internal fun User.toUserResponse(): UserResponse = UserResponse(
     status = status,
     isOnline = isOnline ?: false,
     createdAt = Timestamp(
-        Date.from(
-            createdAt.toInstant(TimeZone.currentSystemDefault()).toJavaInstant()
-        )
+        Date.from(createdAt.toInstant(TimeZone.currentSystemDefault()).toJavaInstant())
     ),
     updatedAt = Timestamp(
-        Date.from(
-            updatedAt.toInstant(TimeZone.currentSystemDefault()).toJavaInstant()
-        )
+        Date.from(updatedAt.toInstant(TimeZone.currentSystemDefault()).toJavaInstant())
     ),
     deletedAt = if (deletedAt == null) null else Timestamp(
         Date.from(deletedAt.toInstant(TimeZone.currentSystemDefault()).toJavaInstant())

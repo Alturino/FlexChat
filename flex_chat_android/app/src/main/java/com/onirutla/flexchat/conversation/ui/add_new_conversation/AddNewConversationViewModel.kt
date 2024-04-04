@@ -51,7 +51,7 @@ class AddNewConversationViewModel @Inject constructor(
     val state = _state.asStateFlow()
 
     init {
-        authRepository.currentUser
+        authRepository.currentUserFlow
             .onEach { user -> _state.update { it.copy(currentUser = user) } }
             .launchIn(viewModelScope)
 

@@ -50,21 +50,22 @@ class ConversationsViewModel @Inject constructor(
     val state = _state.asStateFlow()
 
     init {
-        authRepository.currentUser
+        authRepository.currentUserFlow
             .map { it.id }
             .onEach { userId -> _state.update { it.copy(userId = userId) } }
             .launchIn(viewModelScope)
 
         _state.map { it.userId }
-            .distinctUntilChanged { old, new -> old == new }
-            .flatMapLatest { conversationRepository.conversationByUserIdFlow(it) }
+            .flatMapLatest { conversationRepository.conversationsByUserIdFlow(it) }
             .distinctUntilChanged()
-            .map { conversations ->
-                conversations.filterNot { it.conversationMembers.isEmpty() and it.messages.isEmpty() }
+            .onEach { conversations ->
+                _state.update { state ->
+                    state.copy(conversations = conversations.sortedByDescending { conversation ->
+                        conversation.messages.maxOf { it.createdAt }
+                    })
+                }
             }
             .distinctUntilChanged()
-            .onEach { Timber.d("$it") }
-            .onEach { conversations -> _state.update { state -> state.copy(conversations = conversations.sortedByDescending { it.createdAt }) } }
             .launchIn(viewModelScope)
 
         _state.map { it.conversations }

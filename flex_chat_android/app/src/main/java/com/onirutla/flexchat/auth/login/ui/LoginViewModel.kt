@@ -24,6 +24,7 @@ import arrow.core.Either
 import com.onirutla.flexchat.auth.domain.repository.AuthRepository
 import com.onirutla.flexchat.auth.domain.usecase.EmailValidationUseCase
 import com.onirutla.flexchat.auth.domain.usecase.PasswordValidationUseCase
+import com.onirutla.flexchat.auth.login.domain.data.LoginRequest
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -146,8 +147,10 @@ class LoginViewModel @Inject constructor(
             LoginEvent.OnLoginClicked -> {
                 viewModelScope.launch {
                     authRepository.loginWithEmailAndPassword(
-                        email = _state.value.email,
-                        password = _state.value.password
+                        request = LoginRequest(
+                            email = _state.value.email,
+                            password = _state.value.password
+                        )
                     ).onLeft { exception ->
                         Timber.e(exception)
                         _state.update { it.copy(isLoginSuccessful = false) }

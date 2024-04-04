@@ -19,6 +19,7 @@ package com.onirutla.flexchat.user.data.repository
 import arrow.core.Either
 import arrow.core.raise.either
 import arrow.core.raise.ensure
+import arrow.core.raise.ensureNotNull
 import arrow.fx.coroutines.parMap
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
@@ -52,31 +53,23 @@ internal class FirebaseUserRepository @Inject constructor(
 
     private val userRef = firestore.collection(FirebaseCollections.USERS)
 
-    override suspend fun upsertUser(user: User): Either<Throwable, User> = either {
+    override suspend fun upsertUser(user: User): Either<Throwable, User> = Either.catch {
         val userResponse = user.toUserResponse()
-
-        Either.catch {
-            userRef.document(userResponse.id)
-                .set(userResponse.copy(updatedAt = null))
-                .await()
-        }.onLeft { Timber.e(it) }
-            .bind()
-
+        userRef.document(userResponse.id)
+            .set(userResponse.copy(updatedAt = null))
+            .await()
         userResponse.toUser()
     }.onLeft { Timber.e(it) }
 
-    override suspend fun getUserById(id: String): Either<Throwable, User> = Either.catch {
+    override suspend fun getUserById(id: String): Either<Throwable, User> = either {
         val user = userRef.document(id)
             .get()
             .await()
             .toObject<UserResponse>()
-            ?.toUser()!!
-
-        if (user.deletedAt != null) {
-            throw IllegalStateException("User is not exist")
-        } else {
-            user
-        }
+            ?.toUser()
+        ensureNotNull(user) { Throwable("User is not exist") }
+        ensure(user.deletedAt == null) { Throwable("User is not exist") }
+        user
     }.onLeft { Timber.e(it) }
 
     override suspend fun deleteUser(user: User): Either<Throwable, Void> = either {
@@ -89,12 +82,8 @@ internal class FirebaseUserRepository @Inject constructor(
                 .exists()
         }.bind()
 
-        ensure(isExist) {
+        ensure(isExist && userResponse.deletedAt == null) {
             IllegalStateException("User is not exist")
-        }
-
-        ensure(userResponse.deletedAt == null) {
-            IllegalStateException("User is already")
         }
 
         val now = Clock.System.now()

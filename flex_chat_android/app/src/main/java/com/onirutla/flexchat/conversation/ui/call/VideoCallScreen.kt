@@ -72,7 +72,6 @@ fun VideoCallScreen(modifier: Modifier = Modifier) {
 
     var callMediaState by remember { mutableStateOf(CallMediaState()) }
 
-
     val activity = (LocalContext.current as? Activity)
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -95,6 +94,34 @@ fun VideoCallScreen(modifier: Modifier = Modifier) {
                 paddingValues = PaddingValues(8.dp)
             )
         }
+        VideoCallControls(
+            modifier = Modifier,
+            callMediaState = callMediaState,
+            onCallAction = {
+                when (it) {
+                    CallAction.FlipCamera -> {
+                        sessionManager.flipCamera()
+                    }
+
+                    CallAction.LeaveCall -> {
+                        sessionManager.disconnect()
+                        activity?.finish()
+                    }
+
+                    is CallAction.ToggleCamera -> {
+                        val enabled = callMediaState.isCameraEnabled.not()
+                        callMediaState = callMediaState.copy(isCameraEnabled = enabled)
+                        sessionManager.enableMicrophone(enabled)
+                    }
+
+                    is CallAction.ToggleMicroPhone -> {
+                        val enabled = callMediaState.isMicrophoneEnabled.not()
+                        callMediaState = callMediaState.copy(isMicrophoneEnabled = enabled)
+                        sessionManager.enableMicrophone(enabled)
+                    }
+                }
+            }
+        )
     }
 }
 

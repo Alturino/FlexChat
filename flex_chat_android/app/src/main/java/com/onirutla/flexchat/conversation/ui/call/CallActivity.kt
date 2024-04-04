@@ -32,6 +32,7 @@ import com.onirutla.flexchat.core.webrtc.SignalingClient
 import com.onirutla.flexchat.core.webrtc.WebRtcSessionManager
 import com.onirutla.flexchat.core.webrtc.WebRtcSessionManagerImpl
 import dagger.hilt.android.AndroidEntryPoint
+import timber.log.Timber
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -45,10 +46,12 @@ class CallActivity : ComponentActivity() {
         requestPermissions(arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO), 0)
 
         val conversationId = intent.getStringExtra("conversationId").orEmpty()
+        val callInitiatorId = intent.getStringExtra("callInitiatorId").orEmpty()
         val sessionManager: WebRtcSessionManager = WebRtcSessionManagerImpl(
             context = this,
             signalingClient = SignalingClient(firestore),
             conversationId = conversationId,
+            callInitiatorId = callInitiatorId,
             peerConnectionFactory = FlexChatPeerConnectionFactory(this)
         )
         setContent {
@@ -56,6 +59,7 @@ class CallActivity : ComponentActivity() {
                 CompositionLocalProvider(LocalWebRtcSessionManager provides sessionManager){
                     Surface {
                         val state by sessionManager.signalingClient.sessionStateFlow.collectAsStateWithLifecycle()
+                        Timber.d("state: $state")
                         VideoCallScreen()
                     }
                 }

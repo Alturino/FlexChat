@@ -35,8 +35,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Call
 import androidx.compose.material.icons.rounded.Send
-import androidx.compose.material.icons.rounded.VideoCall
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
@@ -83,8 +83,8 @@ fun ConversationRoomScreen(
                 },
                 actions = {
                     Row {
-                        IconButton(onClick = { onUiEvent(ConversationRoomUiEvent.OnVideoCallClick) }) {
-                            Icon(imageVector = Icons.Rounded.VideoCall, contentDescription = null)
+                        IconButton(onClick = { onUiEvent(ConversationRoomUiEvent.OnCallClick) }) {
+                            Icon(imageVector = Icons.Rounded.Call, contentDescription = null)
                         }
                     }
                 }

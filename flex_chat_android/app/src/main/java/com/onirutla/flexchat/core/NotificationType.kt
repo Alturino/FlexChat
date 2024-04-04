@@ -14,15 +14,8 @@
  * limitations under the License.
  */
 
-package com.onirutla.flexchat.conversation.domain.repository
+package com.onirutla.flexchat.core
 
-import arrow.core.Either
-import com.onirutla.flexchat.conversation.domain.model.Conversation
-import kotlinx.coroutines.flow.Flow
-
-interface ConversationRepository {
-    suspend fun conversationByUserId(userId: String): Either<Throwable, List<Conversation>>
-    suspend fun getConversationById(conversationId: String): Either<Throwable, Conversation>
-    fun conversationsByUserIdFlow(userId: String): Flow<List<Conversation>>
-    suspend fun createConversation(userIds: List<String>): Either<Throwable, Conversation>
+enum class NotificationType {
+    Message, Call
 }

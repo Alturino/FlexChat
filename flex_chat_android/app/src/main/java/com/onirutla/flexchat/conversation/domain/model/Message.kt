@@ -49,18 +49,9 @@ internal fun Message.toMessageResponse() = MessageResponse(
     senderName = senderName,
     senderPhotoUrl = senderPhotoUrl,
     messageBody = messageBody,
-    createdAt = Timestamp(
-        Date.from(createdAt.toInstant(TimeZone.currentSystemDefault()).toJavaInstant())
-    ),
-    updatedAt = Timestamp(
-        Date.from(updatedAt.toInstant(TimeZone.currentSystemDefault()).toJavaInstant())
-    ),
-    deletedAt = if (deletedAt == null) {
-        null
-    } else {
-        Timestamp(Date.from(deletedAt.toInstant(TimeZone.currentSystemDefault()).toJavaInstant()))
-    }
-
+    createdAt = null,
+    updatedAt = null,
+    deletedAt = null
 )
 
 internal fun List<Message>.toMessageResponses() = map { it.toMessageResponse() }

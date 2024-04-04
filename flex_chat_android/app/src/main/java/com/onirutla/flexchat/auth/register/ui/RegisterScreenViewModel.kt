@@ -27,6 +27,7 @@ import com.onirutla.flexchat.auth.domain.model.PasswordError
 import com.onirutla.flexchat.auth.domain.repository.AuthRepository
 import com.onirutla.flexchat.auth.domain.usecase.EmailValidationUseCase
 import com.onirutla.flexchat.auth.domain.usecase.PasswordValidationUseCase
+import com.onirutla.flexchat.auth.register.domain.data.RegisterRequest
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -298,9 +299,11 @@ class RegisterScreenViewModel @Inject constructor(
             RegisterScreenEvent.OnRegisterClick -> {
                 viewModelScope.launch {
                     authRepository.registerWithEmailAndPassword(
-                        username = _state.value.username,
-                        email = _state.value.email,
-                        password = _state.value.password
+                        request = RegisterRequest(
+                            username = _state.value.username,
+                            email = _state.value.email,
+                            password = _state.value.password
+                        )
                     ).onLeft { exception ->
                         Timber.e(exception)
                         _state.update {

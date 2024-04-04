@@ -20,4 +20,5 @@ internal data class OnGoingCallResponse(
     val conversationId: String = "",
     val sessionDescription: String = "",
     val signalingCommand: String = "",
+    val callInitiatorId: String = "",
 )

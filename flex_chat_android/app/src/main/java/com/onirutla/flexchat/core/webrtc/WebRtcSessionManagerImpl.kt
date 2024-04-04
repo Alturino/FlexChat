@@ -59,6 +59,7 @@ class WebRtcSessionManagerImpl(
     override val signalingClient: SignalingClient,
     override val peerConnectionFactory: FlexChatPeerConnectionFactory,
     private val conversationId: String,
+    private val callInitiatorId: String,
 ) : WebRtcSessionManager {
 
     private val sessionManagerScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -158,6 +159,7 @@ class WebRtcSessionManagerImpl(
                     SignalingCommand.ICE,
                     "${iceCandidate.sdpMid}$ICE_SEPARATOR${iceCandidate.sdpMLineIndex}$ICE_SEPARATOR${iceCandidate.sdp}",
                     conversationId = conversationId,
+                    callInitiatorId = callInitiatorId
                 )
             },
             onVideoTrack = { rtpTransceiver ->
@@ -218,7 +220,7 @@ class WebRtcSessionManagerImpl(
         }
     }
 
-    override fun disconnect(enabled: Boolean) {
+    override fun disconnect() {
         // dispose audio & video tracks.
         remoteVideoTrackFlow.replayCache.forEach { videoTrack ->
             videoTrack.dispose()
@@ -228,6 +230,7 @@ class WebRtcSessionManagerImpl(
         }
         localAudioTrack.dispose()
         localVideoTrack.dispose()
+        peerConnection.connection.dispose()
 
         // dispose audio handler and video capturer.
         audioHandler.stop()
@@ -242,7 +245,12 @@ class WebRtcSessionManagerImpl(
         val offer = peerConnection.createOffer().getOrThrow()
         val result = peerConnection.setLocalDescription(offer)
         result.onSuccess {
-            signalingClient.sendCommand(SignalingCommand.OFFER, offer.description, conversationId)
+            signalingClient.sendCommand(
+                SignalingCommand.OFFER,
+                offer.description,
+                conversationId,
+                callInitiatorId
+            )
         }
         Timber.d("[SDP] send offer: ${offer.stringify()}")
     }
@@ -254,7 +262,12 @@ class WebRtcSessionManagerImpl(
         val answer = peerConnection.createAnswer().getOrThrow()
         val result = peerConnection.setLocalDescription(answer)
         result.onSuccess {
-            signalingClient.sendCommand(SignalingCommand.ANSWER, answer.description, conversationId)
+            signalingClient.sendCommand(
+                SignalingCommand.ANSWER,
+                answer.description,
+                conversationId,
+                callInitiatorId
+            )
         }
         Timber.d("[SDP] send answer: ${answer.stringify()}")
     }
