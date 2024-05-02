@@ -20,11 +20,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.FirebaseFirestore
 import com.onirutla.flexchat.auth.domain.repository.AuthRepository
-import com.onirutla.flexchat.conversation.domain.model.Message
-import com.onirutla.flexchat.conversation.domain.repository.ConversationMemberRepository
+import com.onirutla.flexchat.conversation.data.model.Message
 import com.onirutla.flexchat.conversation.domain.repository.ConversationRepository
 import com.onirutla.flexchat.conversation.domain.repository.MessageRepository
-import com.onirutla.flexchat.user.domain.model.User
+import com.onirutla.flexchat.user.data.model.User
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -35,7 +34,6 @@ import kotlinx.coroutines.flow.filterNot
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -44,12 +42,11 @@ import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
-class ConversationRoomViewModel @Inject constructor(
+internal class ConversationRoomViewModel @Inject constructor(
     val firestore: FirebaseFirestore,
     private val conversationRepository: ConversationRepository,
     private val messageRepository: MessageRepository,
     private val authRepository: AuthRepository,
-    private val conversationMemberRepository: ConversationMemberRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ConversationRoomState())
@@ -93,13 +90,6 @@ class ConversationRoomViewModel @Inject constructor(
         _state.map { it.currentUser.id }
             .filterNot { it.isEmpty() or it.isBlank() }
             .distinctUntilChanged { old, new -> old == new }
-            .flatMapLatest { userId ->
-                conversationMemberRepository.conversationMemberByUserIdFlow(userId)
-                    .mapNotNull { conversationMembers ->
-                        conversationMembers.firstOrNull { it.userId == userId }
-                    }
-            }
-            .onEach { conversationMember -> _state.update { it.copy(currentConversationMember = conversationMember) } }
             .launchIn(viewModelScope)
     }
 
@@ -114,7 +104,6 @@ class ConversationRoomViewModel @Inject constructor(
                     val message = Message(
                         userId = _state.value.currentUser.id,
                         conversationId = _state.value.conversation.id,
-                        conversationMemberId = _state.value.currentConversationMember.id,
                         senderName = _state.value.currentUser.username,
                         senderPhotoUrl = _state.value.currentUser.photoProfileUrl,
                         messageBody = _state.value.draftMessage,

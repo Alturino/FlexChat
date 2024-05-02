@@ -19,14 +19,9 @@ package com.onirutla.flexchat.conversation.data.model
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.IgnoreExtraProperties
 import com.google.firebase.firestore.ServerTimestamp
-import com.onirutla.flexchat.conversation.domain.model.Message
-import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toKotlinInstant
-import kotlinx.datetime.toLocalDateTime
 
 @IgnoreExtraProperties
-internal data class MessageResponse(
+internal data class Message(
     val id: String = "",
     val userId: String = "",
     val conversationId: String = "",
@@ -40,29 +35,3 @@ internal data class MessageResponse(
     val updatedAt: Timestamp? = null,
     val deletedAt: Timestamp? = null,
 )
-
-internal fun MessageResponse.toMessage() = Message(
-    id = id,
-    conversationId = conversationId,
-    conversationMemberId = conversationMemberId,
-    userId = userId,
-    senderName = senderName,
-    senderPhotoUrl = senderPhotoUrl,
-    messageBody = messageBody,
-    createdAt = createdAt?.toDate()
-        ?.toInstant()
-        ?.toKotlinInstant()
-        ?.toLocalDateTime(TimeZone.currentSystemDefault()) ?: Clock.System.now()
-            .toLocalDateTime(TimeZone.currentSystemDefault()),
-    updatedAt = updatedAt?.toDate()
-        ?.toInstant()
-        ?.toKotlinInstant()
-        ?.toLocalDateTime(TimeZone.currentSystemDefault()) ?: Clock.System.now()
-            .toLocalDateTime(TimeZone.currentSystemDefault()),
-    deletedAt = deletedAt?.toDate()
-        ?.toInstant()
-        ?.toKotlinInstant()
-        ?.toLocalDateTime(TimeZone.currentSystemDefault())
-)
-
-internal fun List<MessageResponse>.toMessages() = map { it.toMessage() }

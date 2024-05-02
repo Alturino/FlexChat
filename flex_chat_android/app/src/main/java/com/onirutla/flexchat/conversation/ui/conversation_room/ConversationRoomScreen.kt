@@ -17,10 +17,6 @@
 package com.onirutla.flexchat.conversation.ui.conversation_room
 
 import android.content.res.Configuration
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.VisibilityThreshold
-import androidx.compose.animation.core.spring
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -32,7 +28,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Call
@@ -48,21 +43,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import com.onirutla.flexchat.conversation.domain.model.Conversation
-import com.onirutla.flexchat.conversation.domain.model.Message
+import com.google.firebase.Timestamp
+import com.onirutla.flexchat.conversation.data.model.Conversation
+import com.onirutla.flexchat.conversation.data.model.Message
 import com.onirutla.flexchat.core.ui.theme.FlexChatTheme
-import com.onirutla.flexchat.ui.components.ChatBubbleItem
 import com.onirutla.flexchat.ui.components.DraftMessageField
-import com.onirutla.flexchat.user.domain.model.User
-import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
+import com.onirutla.flexchat.user.data.model.User
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ConversationRoomScreen(
+internal fun ConversationRoomScreen(
     modifier: Modifier = Modifier,
     state: ConversationRoomState,
     onEvent: (ConversationRoomEvent) -> Unit,
@@ -133,16 +124,16 @@ fun ConversationRoomScreen(
                     }
                 }
             }
-            items(items = state.messages, key = { it.id }) {
-                ChatBubbleItem(
-                    modifier = Modifier.animateItemPlacement(
-                        animationSpec = spring(
-                            stiffness = Spring.StiffnessMedium,
-                            visibilityThreshold = IntOffset.VisibilityThreshold
-                        )
-                    ), message = it, isMySelf = it.userId == state.currentUser.id
-                )
-            }
+//            items(items = state.messages, key = { it.id }) {
+//                ChatBubbleItem(
+//                    modifier = Modifier.animateItemPlacement(
+//                        animationSpec = spring(
+//                            stiffness = Spring.StiffnessMedium,
+//                            visibilityThreshold = IntOffset.VisibilityThreshold
+//                        )
+//                    ), message = it, isMySelf = it.userId == state.currentUser.id
+//                )
+//            }
         }
     }
 }
@@ -168,12 +159,10 @@ private fun ConversationScreenPreview() {
                     conversationName = "Pesarkas Handal",
                     imageUrl = "https://duckduckgo.com/?q=persius",
                     isGroup = false,
-                    conversationMembers = listOf(),
 //                    latestMessage = Message(),
-                    createdAt = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
-                    deletedAt = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
+                    createdAt = Timestamp.now(),
+                    deletedAt = Timestamp.now(),
                     slug = "",
-                    conversationMemberIds = listOf()
                 ),
                 messages = listOf(
                     Message(
@@ -184,10 +173,8 @@ private fun ConversationScreenPreview() {
                         senderName = "Robbie Combs",
                         senderPhotoUrl = "https://www.google.com/#q=solet",
                         messageBody = "ius",
-                        createdAt = Clock.System.now()
-                            .toLocalDateTime(TimeZone.currentSystemDefault()),
-                        deletedAt = Clock.System.now()
-                            .toLocalDateTime(TimeZone.currentSystemDefault())
+                        createdAt = Timestamp.now(),
+                        deletedAt = Timestamp.now()
                     ),
                     Message(
                         id = "asdfasdfasdf",
@@ -197,10 +184,8 @@ private fun ConversationScreenPreview() {
                         senderName = "Robbie Combs",
                         senderPhotoUrl = "https://www.google.com/#q=solet",
                         messageBody = "ius",
-                        createdAt = Clock.System.now()
-                            .toLocalDateTime(TimeZone.currentSystemDefault()),
-                        deletedAt = Clock.System.now()
-                            .toLocalDateTime(TimeZone.currentSystemDefault())
+                        createdAt = Timestamp.now(),
+                        deletedAt = Timestamp.now()
                     )
                 )
             ),

@@ -16,9 +16,7 @@
 
 package com.onirutla.flexchat.conversation.di
 
-import com.onirutla.flexchat.conversation.data.repository.FirebaseConversationMemberRepository
 import com.onirutla.flexchat.conversation.data.repository.FirebaseConversationRepository
-import com.onirutla.flexchat.conversation.domain.repository.ConversationMemberRepository
 import com.onirutla.flexchat.conversation.domain.repository.ConversationRepository
 import dagger.Binds
 import dagger.Module
@@ -32,8 +30,4 @@ abstract class BindConversationModule {
     @Binds
     @Singleton
     internal abstract fun bindConversationRepository(firebaseConversationRepository: FirebaseConversationRepository): ConversationRepository
-
-    @Binds
-    @Singleton
-    internal abstract fun bindConversationMemberRepository(firebaseConversationMemberRepository: FirebaseConversationMemberRepository): ConversationMemberRepository
 }

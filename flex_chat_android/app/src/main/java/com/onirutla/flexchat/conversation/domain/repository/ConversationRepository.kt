@@ -17,10 +17,10 @@
 package com.onirutla.flexchat.conversation.domain.repository
 
 import arrow.core.Either
-import com.onirutla.flexchat.conversation.domain.model.Conversation
+import com.onirutla.flexchat.conversation.data.model.Conversation
 import kotlinx.coroutines.flow.Flow
 
-interface ConversationRepository {
+internal interface ConversationRepository {
     suspend fun conversationByUserId(userId: String): Either<Throwable, List<Conversation>>
     suspend fun getConversationById(conversationId: String): Either<Throwable, Conversation>
     fun conversationsByUserIdFlow(userId: String): Flow<List<Conversation>>

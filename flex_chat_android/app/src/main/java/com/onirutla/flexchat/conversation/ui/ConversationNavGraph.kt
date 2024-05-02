@@ -50,7 +50,7 @@ import com.onirutla.flexchat.core.webrtc.FlexChatPeerConnectionFactory
 import com.onirutla.flexchat.core.webrtc.SignalingClient
 import com.onirutla.flexchat.core.webrtc.WebRtcSessionManager
 import com.onirutla.flexchat.core.webrtc.WebRtcSessionManagerImpl
-import com.onirutla.flexchat.ui.screens.profile_screen.ProfileScreenViewModel
+import com.onirutla.flexchat.user.ui.profile_screen.ProfileScreenViewModel
 import com.onirutla.flexchat.user.ui.profile_screen.ProfileScreen
 import com.onirutla.flexchat.user.ui.profile_screen.ProfileScreenUiEvent
 import timber.log.Timber

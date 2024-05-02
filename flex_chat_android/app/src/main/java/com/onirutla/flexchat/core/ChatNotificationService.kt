@@ -28,14 +28,13 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.core.app.Person
 import arrow.core.getOrElse
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.onirutla.flexchat.MainActivity
 import com.onirutla.flexchat.R
 import com.onirutla.flexchat.auth.domain.repository.AuthRepository
-import com.onirutla.flexchat.conversation.domain.model.Conversation
+import com.onirutla.flexchat.conversation.data.model.Conversation
 import com.onirutla.flexchat.conversation.domain.repository.ConversationRepository
 import com.onirutla.flexchat.conversation.ui.call.CallActivity
 import com.onirutla.flexchat.core.util.NotificationConstants.CALL_NOTIFICATION_CHANNEL_ID
@@ -53,7 +52,7 @@ import timber.log.Timber
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class ChatNotificationService : FirebaseMessagingService() {
+internal class ChatNotificationService : FirebaseMessagingService() {
 
     @Inject
     lateinit var conversationRepository: ConversationRepository
@@ -217,24 +216,24 @@ class ChatNotificationService : FirebaseMessagingService() {
             message.notification?.body.orEmpty(),
             notificationType
         )
-        if (conversation.conversationMemberIds.size == 2) {
-            val callInitiator = conversation.conversationMembers.find { it.userId == callInitiatorId }
-            Timber.d("callInitiatorId: $callInitiatorId, callInitiator: $callInitiator")
-
-            Timber.d("creating person for notification")
-            val person = Person.Builder()
-                .setName(callInitiator?.username.orEmpty())
-                .setImportant(true)
-                .build()
-            Timber.d("person for notification creation finished")
-
-            val answerPendingIntent = createPendingIntent(notificationType)
-            val incomingCallStyle = NotificationCompat.CallStyle.forIncomingCall(
-                person,
-                answerPendingIntent,
-                answerPendingIntent
-            )
-            notificationBuilder.setStyle(incomingCallStyle)
+        if (conversation.messageIds.size == 2) {
+            // TODO: implement incoming call notification notify all users except the one who started the call
+//            Timber.d("callInitiatorId: $callInitiatorId, callInitiator: $callInitiator")
+//
+//            Timber.d("creating person for notification")
+//            val person = Person.Builder()
+//                .setName(callInitiator?.username.orEmpty())
+//                .setImportant(true)
+//                .build()
+//            Timber.d("person for notification creation finished")
+//
+//            val answerPendingIntent = createPendingIntent(notificationType)
+//            val incomingCallStyle = NotificationCompat.CallStyle.forIncomingCall(
+//                person,
+//                answerPendingIntent,
+//                answerPendingIntent
+//            )
+//            notificationBuilder.setStyle(incomingCallStyle)
         }
         if (isPermissionNotGranted()) {
             return

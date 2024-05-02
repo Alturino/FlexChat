@@ -30,7 +30,7 @@ import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.storageMetadata
 import com.onirutla.flexchat.conversation.data.model.AttachmentArgs
 import com.onirutla.flexchat.conversation.domain.repository.AttachmentRepository
-import com.onirutla.flexchat.core.data.model.AttachmentResponse
+import com.onirutla.flexchat.core.data.model.Attachment
 import com.onirutla.flexchat.core.domain.model.error_state.CreateAttachmentError
 import com.onirutla.flexchat.core.domain.model.error_state.GetAttachmentError
 import com.onirutla.flexchat.core.util.FirebaseCollections
@@ -100,8 +100,8 @@ internal class FirebaseAttachmentRepository @Inject constructor(
         }
 
         val attachmentId = attachmentRef.document().id
-        val attachmentResponse = with(attachmentArgs) {
-            AttachmentResponse(
+        val attachment = with(attachmentArgs) {
+            Attachment(
                 id = attachmentId,
                 userId = userId,
                 conversationId = conversationId,
@@ -113,23 +113,23 @@ internal class FirebaseAttachmentRepository @Inject constructor(
             )
         }
         attachmentRef.document(attachmentId)
-            .set(attachmentResponse)
+            .set(attachment)
             .addOnFailureListener { raise(CreateAttachmentError.FailedToInsertToDatabase(it)) }
     }
 
     private suspend fun getAttachmentByField(
         field: String,
         value: String,
-    ): Either<GetAttachmentError, List<AttachmentResponse>> = Either.catch {
+    ): Either<GetAttachmentError, List<Attachment>> = Either.catch {
         attachmentRef.whereEqualTo(field, value)
             .get()
             .await()
-            .toObjects<AttachmentResponse>()
+            .toObjects<Attachment>()
     }.mapLeft { GetAttachmentError.UnknownError(it) }
 
     override suspend fun getAttachmentByMessageId(
         messageId: String,
-    ): Either<GetAttachmentError, List<AttachmentResponse>> = either {
+    ): Either<GetAttachmentError, List<Attachment>> = either {
         ensure(messageId.isNotBlank() or messageId.isNotEmpty()) {
             GetAttachmentError.ArgumentError(field = "messageId")
         }
@@ -146,7 +146,7 @@ internal class FirebaseAttachmentRepository @Inject constructor(
 
     override suspend fun getAttachmentByConversationId(
         conversationId: String,
-    ): Either<GetAttachmentError, List<AttachmentResponse>> = either {
+    ): Either<GetAttachmentError, List<Attachment>> = either {
         ensure(conversationId.isNotBlank() or conversationId.isNotEmpty()) {
             GetAttachmentError.ArgumentError(field = "conversationId")
         }
@@ -162,14 +162,14 @@ internal class FirebaseAttachmentRepository @Inject constructor(
 
     override fun attachmentByMessageIdFlow(
         messageId: String,
-    ): Flow<List<AttachmentResponse>> = attachmentRef
+    ): Flow<List<Attachment>> = attachmentRef
         .whereEqualTo("messageId", messageId)
         .snapshots()
-        .map { it.toObjects<AttachmentResponse>() }
+        .map { it.toObjects<Attachment>() }
 
     override suspend fun getAttachmentByUserId(
         userId: String,
-    ): Either<GetAttachmentError, List<AttachmentResponse>> = either {
+    ): Either<GetAttachmentError, List<Attachment>> = either {
         ensure(userId.isNotBlank() or userId.isNotEmpty()) {
             GetAttachmentError.ArgumentError(field = "userId")
         }

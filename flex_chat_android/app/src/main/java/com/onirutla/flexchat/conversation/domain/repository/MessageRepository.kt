@@ -18,10 +18,10 @@ package com.onirutla.flexchat.conversation.domain.repository
 
 import android.net.Uri
 import arrow.core.Either
-import com.onirutla.flexchat.conversation.domain.model.Message
+import com.onirutla.flexchat.conversation.data.model.Message
 import kotlinx.coroutines.flow.Flow
 
-interface MessageRepository {
+internal interface MessageRepository {
     suspend fun messageByUserId(userId: String): Either<Throwable, List<Message>>
     suspend fun messageById(id: String): Either<Throwable, Message>
     suspend fun messageByConversationId(conversationId: String): Either<Throwable, List<Message>>

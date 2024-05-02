@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.onirutla.flexchat.ui.components
+package com.onirutla.flexchat.core.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -33,15 +33,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.onirutla.flexchat.conversation.domain.model.Message
+import com.google.firebase.Timestamp
+import com.onirutla.flexchat.conversation.data.model.Message
 import com.onirutla.flexchat.core.ui.theme.FlexChatTheme
 import com.onirutla.flexchat.core.ui.util.format
-import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toKotlinInstant
 import kotlinx.datetime.toLocalDateTime
 
 @Composable
-fun ChatBubbleItem(modifier: Modifier = Modifier, message: Message, isMySelf: Boolean) {
+internal fun ChatBubbleItem(
+    modifier: Modifier = Modifier,
+    message: Message,
+    isMySelf: Boolean,
+) {
     Column(modifier = modifier.fillMaxWidth()) {
         ElevatedCard(
             modifier = Modifier
@@ -80,7 +85,13 @@ fun ChatBubbleItem(modifier: Modifier = Modifier, message: Message, isMySelf: Bo
                 )
                 Text(
                     modifier = Modifier.align(Alignment.End),
-                    text = message.createdAt.format(),
+                    text = message.createdAt
+                        ?.toDate()
+                        ?.toInstant()
+                        ?.toKotlinInstant()
+                        ?.toLocalDateTime(TimeZone.currentSystemDefault())
+                        ?.format()
+                        .orEmpty(),
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Medium
                 )
@@ -102,8 +113,8 @@ private fun ChatBubblePreview() {
                 senderName = "Mauricio Barron",
                 senderPhotoUrl = "https://www.google.com/#q=elitr",
                 messageBody = "lacusfadsfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdffasdfadf",
-                createdAt = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
-                updatedAt = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
+                createdAt = Timestamp.now(),
+                updatedAt = Timestamp.now(),
                 deletedAt = null
             ),
             isMySelf = true

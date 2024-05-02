@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AddComment
 import androidx.compose.material.icons.rounded.Person
@@ -42,17 +41,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.google.firebase.Timestamp
 import com.onirutla.flexchat.R
-import com.onirutla.flexchat.conversation.domain.model.Conversation
-import com.onirutla.flexchat.core.ui.components.ConversationItem
+import com.onirutla.flexchat.conversation.data.model.Conversation
 import com.onirutla.flexchat.core.ui.theme.FlexChatTheme
-import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ConversationsScreen(
+internal fun ConversationsScreen(
     modifier: Modifier = Modifier,
     state: ConversationsState,
     onUiEvent: (ConversationsUiEvent) -> Unit,
@@ -95,15 +91,15 @@ fun ConversationsScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             horizontalAlignment = Alignment.Start,
         ) {
-            items(
-                items = state.conversations,
-            ) {
-                ConversationItem(
-                    modifier = Modifier.fillMaxWidth(),
-                    conversation = it,
-                    onClick = { onUiEvent(ConversationsUiEvent.OnConversationClick(it)) }
-                )
-            }
+//            items(
+//                items = state.conversations,
+//            ) {
+//                ConversationItem(
+//                    modifier = Modifier.fillMaxWidth(),
+//                    conversation = it,
+//                    onClick = { onUiEvent(ConversationsUiEvent.OnConversationClick(it)) }
+//                )
+//            }
         }
     }
 }
@@ -129,10 +125,9 @@ fun MainScreenPreview() {
                         conversationName = "Cornell Glover",
                         imageUrl = "https://duckduckgo.com/?q=dico",
                         isGroup = false,
-                        conversationMembers = listOf(),
 //                        latestMessage = Message(),
-                        createdAt = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
-                        deletedAt = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
+                        createdAt = Timestamp.now(),
+                        deletedAt = Timestamp.now()
                     ),
 //                    Conversation(
 //                        id = "dictumst",

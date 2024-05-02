@@ -40,7 +40,7 @@ import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
-class ConversationsViewModel @Inject constructor(
+internal class ConversationsViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val firebaseMessaging: FirebaseMessaging,
     private val conversationRepository: ConversationRepository,
@@ -60,9 +60,7 @@ class ConversationsViewModel @Inject constructor(
             .distinctUntilChanged()
             .onEach { conversations ->
                 _state.update { state ->
-                    state.copy(conversations = conversations.sortedByDescending { conversation ->
-                        conversation.messages.maxOf { it.createdAt }
-                    })
+                    state.copy(conversations = conversations.sortedByDescending { it.createdAt })
                 }
             }
             .distinctUntilChanged()

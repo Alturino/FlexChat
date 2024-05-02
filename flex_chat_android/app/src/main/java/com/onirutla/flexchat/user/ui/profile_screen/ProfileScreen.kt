@@ -60,7 +60,7 @@ import com.onirutla.flexchat.core.ui.theme.FlexChatTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen(
+internal fun ProfileScreen(
     modifier: Modifier = Modifier,
     state: ProfileScreenState,
     onEvent: (ProfileScreenEvent) -> Unit,

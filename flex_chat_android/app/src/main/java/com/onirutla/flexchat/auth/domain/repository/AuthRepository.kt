@@ -21,10 +21,10 @@ import android.content.IntentSender
 import arrow.core.Either
 import com.onirutla.flexchat.auth.login.domain.data.LoginRequest
 import com.onirutla.flexchat.auth.register.domain.data.RegisterRequest
-import com.onirutla.flexchat.user.domain.model.User
+import com.onirutla.flexchat.user.data.model.User
 import kotlinx.coroutines.flow.Flow
 
-interface AuthRepository {
+internal interface AuthRepository {
     fun signOut(): Either<Throwable, Unit>
     suspend fun getSignInIntentSender(): Either<Throwable, IntentSender>
     suspend fun loginWithGoogle(intent: Intent): Either<Throwable, User>

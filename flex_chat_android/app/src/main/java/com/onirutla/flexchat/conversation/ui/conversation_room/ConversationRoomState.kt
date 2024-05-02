@@ -16,16 +16,14 @@
 
 package com.onirutla.flexchat.conversation.ui.conversation_room
 
-import com.onirutla.flexchat.conversation.domain.model.Conversation
-import com.onirutla.flexchat.conversation.domain.model.ConversationMember
-import com.onirutla.flexchat.conversation.domain.model.Message
-import com.onirutla.flexchat.user.domain.model.User
+import com.onirutla.flexchat.conversation.data.model.Conversation
+import com.onirutla.flexchat.conversation.data.model.Message
+import com.onirutla.flexchat.user.data.model.User
 
-data class ConversationRoomState(
+internal data class ConversationRoomState(
     val conversation: Conversation = Conversation(),
     val messages: List<Message> = listOf(),
     val currentUser: User = User(),
-    val currentConversationMember: ConversationMember = ConversationMember(),
     val draftMessage: String = "",
     val isSendMessageError: Boolean = false,
     val sendErrorMessage: String = "",

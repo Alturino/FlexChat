@@ -16,8 +16,8 @@
 
 package com.onirutla.flexchat.user.ui.profile_screen
 
-import com.onirutla.flexchat.user.domain.model.User
+import com.onirutla.flexchat.user.data.model.User
 
-data class ProfileScreenState(
+internal data class ProfileScreenState(
     val user: User = User(),
 )

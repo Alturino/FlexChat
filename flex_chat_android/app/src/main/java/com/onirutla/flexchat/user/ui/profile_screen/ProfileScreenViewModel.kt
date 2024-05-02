@@ -14,13 +14,11 @@
  * limitations under the License.
  */
 
-package com.onirutla.flexchat.ui.screens.profile_screen
+package com.onirutla.flexchat.user.ui.profile_screen
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.onirutla.flexchat.auth.domain.repository.AuthRepository
-import com.onirutla.flexchat.user.ui.profile_screen.ProfileScreenEvent
-import com.onirutla.flexchat.user.ui.profile_screen.ProfileScreenState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,7 +28,7 @@ import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 
 @HiltViewModel
-class ProfileScreenViewModel @Inject constructor(
+internal class ProfileScreenViewModel @Inject constructor(
     private val authRepository: AuthRepository,
 ) : ViewModel() {
 

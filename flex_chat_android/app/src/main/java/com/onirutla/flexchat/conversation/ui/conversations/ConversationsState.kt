@@ -16,9 +16,9 @@
 
 package com.onirutla.flexchat.conversation.ui.conversations
 
-import com.onirutla.flexchat.conversation.domain.model.Conversation
+import com.onirutla.flexchat.conversation.data.model.Conversation
 
-data class ConversationsState(
+internal data class ConversationsState(
     val userId: String = "",
     val conversations: List<Conversation> = listOf(),
 )

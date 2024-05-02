@@ -35,10 +35,7 @@ import com.onirutla.flexchat.auth.register.domain.data.RegisterRequest
 import com.onirutla.flexchat.core.util.FirebaseCollections
 import com.onirutla.flexchat.core.util.FirebaseSecret.SIGN_IN_CLIENT_SERVER_CLIENT_ID
 import com.onirutla.flexchat.core.util.firebaseUserFlow
-import com.onirutla.flexchat.user.data.model.UserResponse
-import com.onirutla.flexchat.user.data.model.toUser
-import com.onirutla.flexchat.user.domain.model.User
-import com.onirutla.flexchat.user.domain.model.toUserResponse
+import com.onirutla.flexchat.user.data.model.User
 import com.onirutla.flexchat.user.domain.repository.UserRepository
 import com.onirutla.flexchat.user.util.toUserResponse
 import kotlinx.coroutines.flow.Flow
@@ -68,9 +65,7 @@ internal class FirebaseAuthRepository @Inject constructor(
         .onEach { Timber.d("FirebaseUser: $it") }
 
     override val currentUserFlow: Flow<User> = _currentUser.filterNotNull()
-        .mapNotNull { firebaseUser ->
-            userRepository.getUserById(firebaseUser.uid).getOrNull()
-        }
+        .mapNotNull { firebaseUser -> userRepository.getUserById(firebaseUser.uid).getOrNull() }
         .filterNot { it == User() }
         .catch { Timber.e(it) }
         .onEach { Timber.d("User from firestore: $it") }
@@ -111,14 +106,13 @@ internal class FirebaseAuthRepository @Inject constructor(
         Either.catch {
             firestore.runTransaction {
                 val user = it.get(userRef.document(firebaseUser.uid))
-                    .toObject<UserResponse>()!!
-                    .toUser()
+                    .toObject<User>()!!
+
 
                 with(request) {
                     it.set(
                         userRef.document(user.id),
-                        user.toUserResponse()
-                            .copy(username = email, email = email, password = password)
+                        user.copy(username = email, email = email, password = password)
                     )
                 }
                 user
@@ -173,15 +167,15 @@ internal class FirebaseAuthRepository @Inject constructor(
                 val fromFirestore = it.get(userRef.document(firebaseUser.uid))
                 val isExist = fromFirestore.exists()
                 if (isExist) {
-                    fromFirestore.toObject<UserResponse>()!!
-                        .toUser()
+                    fromFirestore.toObject<User>()!!
+
                 } else {
                     val fromAuth = firebaseUser.toUserResponse()
                     it.set(
                         userRef.document(firebaseUser.uid),
                         fromAuth
                     )
-                    fromAuth.toUser()
+                    fromAuth
                 }
             }.await()
         }.bind()
@@ -225,7 +219,7 @@ internal class FirebaseAuthRepository @Inject constructor(
                     )
                 }
                 it.set(userRef.document(userResponse.id), userResponse)
-                userResponse.toUser()
+                userResponse
             }.await()
         }.bind()
     }

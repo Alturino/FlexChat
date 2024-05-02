@@ -17,10 +17,10 @@
 package com.onirutla.flexchat.user.domain.repository
 
 import arrow.core.Either
-import com.onirutla.flexchat.user.domain.model.User
+import com.onirutla.flexchat.user.data.model.User
 import kotlinx.coroutines.flow.Flow
 
-interface UserRepository {
+internal interface UserRepository {
     suspend fun upsertUser(user: User): Either<Throwable, User>
     suspend fun getUserById(id: String): Either<Throwable, User>
     suspend fun deleteUser(user: User): Either<Throwable, Void>

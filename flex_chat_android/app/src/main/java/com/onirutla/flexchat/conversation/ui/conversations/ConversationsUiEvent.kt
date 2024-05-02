@@ -16,9 +16,9 @@
 
 package com.onirutla.flexchat.conversation.ui.conversations
 
-import com.onirutla.flexchat.conversation.domain.model.Conversation
+import com.onirutla.flexchat.conversation.data.model.Conversation
 
-sealed interface ConversationsUiEvent {
+internal sealed interface ConversationsUiEvent {
     data class OnConversationClick(val conversation: Conversation) : ConversationsUiEvent
     data object OnProfileIconClick : ConversationsUiEvent
     data object OnFloatingActionButtonClick : ConversationsUiEvent

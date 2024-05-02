@@ -16,9 +16,9 @@
 
 package com.onirutla.flexchat.conversation.ui.add_new_conversation
 
-import com.onirutla.flexchat.user.domain.model.User
+import com.onirutla.flexchat.user.data.model.User
 
-sealed interface AddNewConversationEvent {
+internal sealed interface AddNewConversationEvent {
     data class OnQueryChange(val query: String) : AddNewConversationEvent
     data object OnQueryClear : AddNewConversationEvent
     data object OnSearchClick : AddNewConversationEvent

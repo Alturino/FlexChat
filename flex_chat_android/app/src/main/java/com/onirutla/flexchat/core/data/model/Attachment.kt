@@ -21,7 +21,7 @@ import com.google.firebase.firestore.IgnoreExtraProperties
 import com.google.firebase.firestore.ServerTimestamp
 
 @IgnoreExtraProperties
-data class AttachmentResponse(
+data class Attachment(
     val id: String = "",
     val userId: String,
     val conversationId: String,

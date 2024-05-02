@@ -20,7 +20,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.FirebaseFirestore
 import com.onirutla.flexchat.auth.domain.repository.AuthRepository
-import com.onirutla.flexchat.conversation.domain.repository.ConversationMemberRepository
 import com.onirutla.flexchat.conversation.domain.repository.ConversationRepository
 import com.onirutla.flexchat.user.domain.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -39,12 +38,11 @@ import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
-class AddNewConversationViewModel @Inject constructor(
+internal class AddNewConversationViewModel @Inject constructor(
     private val firestore: FirebaseFirestore,
     private val authRepository: AuthRepository,
     private val userRepository: UserRepository,
     private val conversationRepository: ConversationRepository,
-    private val conversationMemberRepository: ConversationMemberRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AddNewConversationState())

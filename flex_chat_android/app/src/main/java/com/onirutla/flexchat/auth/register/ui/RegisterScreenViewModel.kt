@@ -47,7 +47,7 @@ import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
-class RegisterScreenViewModel @Inject constructor(
+internal class RegisterScreenViewModel @Inject constructor(
     private val authRepository: AuthRepository,
 ) : ViewModel() {
 

@@ -18,20 +18,20 @@ package com.onirutla.flexchat.conversation.domain.repository
 
 import arrow.core.Either
 import com.onirutla.flexchat.conversation.data.model.AttachmentArgs
-import com.onirutla.flexchat.core.data.model.AttachmentResponse
+import com.onirutla.flexchat.core.data.model.Attachment
 import com.onirutla.flexchat.core.domain.model.error_state.CreateAttachmentError
 import com.onirutla.flexchat.core.domain.model.error_state.GetAttachmentError
 import kotlinx.coroutines.flow.Flow
 
 interface AttachmentRepository {
-    suspend fun getAttachmentByConversationId(conversationId: String): Either<GetAttachmentError, List<AttachmentResponse>>
-    suspend fun getAttachmentByMessageId(messageId: String): Either<GetAttachmentError, List<AttachmentResponse>>
-    suspend fun getAttachmentByUserId(userId: String): Either<GetAttachmentError, List<AttachmentResponse>>
+    suspend fun getAttachmentByConversationId(conversationId: String): Either<GetAttachmentError, List<Attachment>>
+    suspend fun getAttachmentByMessageId(messageId: String): Either<GetAttachmentError, List<Attachment>>
+    suspend fun getAttachmentByUserId(userId: String): Either<GetAttachmentError, List<Attachment>>
     suspend fun createAttachment(
         attachmentArgs: AttachmentArgs,
         onProgress: (percent: Double, bytesTransferred: Long, totalByteCount: Long) -> Unit,
     ): Either<CreateAttachmentError, Unit>
 
-    fun attachmentByMessageIdFlow(messageId: String): Flow<List<AttachmentResponse>>
+    fun attachmentByMessageIdFlow(messageId: String): Flow<List<Attachment>>
 }
 

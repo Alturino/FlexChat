@@ -26,13 +26,8 @@ import com.google.firebase.firestore.snapshots
 import com.google.firebase.firestore.toObject
 import com.google.firebase.firestore.toObjects
 import com.onirutla.flexchat.conversation.data.model.AttachmentArgs
-import com.onirutla.flexchat.conversation.data.model.ConversationMemberResponse
-import com.onirutla.flexchat.conversation.data.model.ConversationResponse
-import com.onirutla.flexchat.conversation.data.model.MessageResponse
-import com.onirutla.flexchat.conversation.data.model.toMessage
-import com.onirutla.flexchat.conversation.data.model.toMessages
-import com.onirutla.flexchat.conversation.domain.model.Message
-import com.onirutla.flexchat.conversation.domain.model.toMessageResponse
+import com.onirutla.flexchat.conversation.data.model.Conversation
+import com.onirutla.flexchat.conversation.data.model.Message
 import com.onirutla.flexchat.conversation.domain.repository.AttachmentRepository
 import com.onirutla.flexchat.conversation.domain.repository.MessageRepository
 import com.onirutla.flexchat.core.util.FirebaseCollections
@@ -52,8 +47,6 @@ internal class FirebaseMessageRepository @Inject constructor(
 ) : MessageRepository {
 
     private val messageRef = firestore.collection(FirebaseCollections.MESSAGES)
-    private val conversationMemberRef =
-        firestore.collection(FirebaseCollections.CONVERSATION_MEMBERS)
     private val conversationRef = firestore.collection(FirebaseCollections.CONVERSATIONS)
 
     override suspend fun messageByUserId(
@@ -62,16 +55,15 @@ internal class FirebaseMessageRepository @Inject constructor(
         messageRef.whereEqualTo("userId", userId)
             .get()
             .await()
-            .toObjects<MessageResponse>()
-            .toMessages()
+            .toObjects<Message>()
     }.onLeft { Timber.e(it) }
 
     override suspend fun messageById(id: String): Either<Throwable, Message> = Either.catch {
         messageRef.document(id)
             .get()
             .await()
-            .toObject<MessageResponse>()!!
-            .toMessage()
+            .toObject<Message>()!!
+
     }
 
     override suspend fun messageByConversationId(
@@ -80,8 +72,7 @@ internal class FirebaseMessageRepository @Inject constructor(
         messageRef.whereEqualTo("conversationId", conversationId)
             .get()
             .await()
-            .toObjects<MessageResponse>()
-            .toMessages()
+            .toObjects<Message>()
     }.onLeft { Timber.e(it) }
 
     override fun messageByConversationIdFlow(
@@ -89,7 +80,7 @@ internal class FirebaseMessageRepository @Inject constructor(
     ): Flow<List<Message>> = messageRef.whereEqualTo("conversationId", conversationId)
         .snapshots()
         .map { snapshot ->
-            snapshot.toObjects<MessageResponse>().parMap { it.toMessage() }
+            snapshot.toObjects<Message>().parMap { it }
         }
         .onEach { Timber.d("messageByConversationIdFlow: $it") }
         .catch { Timber.e(it) }
@@ -100,8 +91,8 @@ internal class FirebaseMessageRepository @Inject constructor(
         messageRef.whereEqualTo("conversationMemberId", conversationMemberId)
             .get()
             .await()
-            .toObjects<MessageResponse>()
-            .toMessages()
+            .toObjects<Message>()
+
     }
 
     override suspend fun sendMessage(messageRequest: Message): Either<Throwable, Message> = either {
@@ -130,25 +121,14 @@ internal class FirebaseMessageRepository @Inject constructor(
             messageRef.document().id
         }
 
-        val message = messageRequest.toMessageResponse().copy(id = id)
+        val message = messageRequest.copy(id = id)
         Either.catch {
             firestore.runTransaction {
-                val conversationMember = it
-                    .get(conversationMemberRef.document(message.conversationMemberId))
-                    .toObject<ConversationMemberResponse>()!!
 
                 val conversation = it.get(conversationRef.document(message.conversationId))
-                    .toObject<ConversationResponse>()!!
+                    .toObject<Conversation>()!!
 
                 it.set(messageRef.document(id), message)
-                it.set(
-                    conversationMemberRef.document(conversationMember.id),
-                    conversationMember.copy(
-                        messageIds = conversationMember.messageIds + listOf(
-                            message.id
-                        )
-                    )
-                )
                 it.set(
                     conversationRef.document(conversation.id),
                     conversation.copy(messageIds = conversation.messageIds + listOf(message.id))
@@ -156,7 +136,7 @@ internal class FirebaseMessageRepository @Inject constructor(
             }.await()
         }.onLeft { Timber.e(it) }
             .bind()
-        message.toMessage()
+        message
     }
 
     override suspend fun sendMessageWithAttachment(
@@ -185,13 +165,13 @@ internal class FirebaseMessageRepository @Inject constructor(
         userId: String,
     ): Flow<List<Message>> = messageRef.whereEqualTo("userId", userId)
         .snapshots()
-        .map { snapshot -> snapshot.toObjects<MessageResponse>().parMap { it.toMessage() } }
+        .map { snapshot -> snapshot.toObjects<Message>().parMap { it } }
         .onEach { Timber.d("messageByUserIdFlow: $it") }
 
     override val observeMessage: Flow<List<Message>>
         get() = messageRef.snapshots().map {
-            it.toObjects<MessageResponse>()
-                .toMessages()
+            it.toObjects<Message>()
+
         }
 
 }

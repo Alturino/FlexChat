@@ -16,11 +16,11 @@
 
 package com.onirutla.flexchat.conversation.ui.add_new_conversation
 
-import com.onirutla.flexchat.user.domain.model.User
+import com.onirutla.flexchat.user.data.model.User
 
-data class AddNewConversationState(
+internal data class AddNewConversationState(
     val query: String = "",
     val users: List<User> = listOf(),
     val currentUser: User? = null,
-    val conversationId: String = ""
+    val conversationId: String = "",
 )

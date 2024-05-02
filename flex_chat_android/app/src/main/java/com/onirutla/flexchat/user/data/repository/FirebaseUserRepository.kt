@@ -27,10 +27,7 @@ import com.google.firebase.firestore.snapshots
 import com.google.firebase.firestore.toObject
 import com.google.firebase.firestore.toObjects
 import com.onirutla.flexchat.core.util.FirebaseCollections
-import com.onirutla.flexchat.user.data.model.UserResponse
-import com.onirutla.flexchat.user.data.model.toUser
-import com.onirutla.flexchat.user.domain.model.User
-import com.onirutla.flexchat.user.domain.model.toUserResponse
+import com.onirutla.flexchat.user.data.model.User
 import com.onirutla.flexchat.user.domain.repository.UserRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -54,35 +51,31 @@ internal class FirebaseUserRepository @Inject constructor(
     private val userRef = firestore.collection(FirebaseCollections.USERS)
 
     override suspend fun upsertUser(user: User): Either<Throwable, User> = Either.catch {
-        val userResponse = user.toUserResponse()
-        userRef.document(userResponse.id)
-            .set(userResponse.copy(updatedAt = null))
+        userRef.document(user.id)
+            .set(user.copy(updatedAt = null))
             .await()
-        userResponse.toUser()
+        user
     }.onLeft { Timber.e(it) }
 
     override suspend fun getUserById(id: String): Either<Throwable, User> = either {
         val user = userRef.document(id)
             .get()
             .await()
-            .toObject<UserResponse>()
-            ?.toUser()
+            .toObject<User>()
         ensureNotNull(user) { Throwable("User is not exist") }
         ensure(user.deletedAt == null) { Throwable("User is not exist") }
         user
     }.onLeft { Timber.e(it) }
 
     override suspend fun deleteUser(user: User): Either<Throwable, Void> = either {
-        val userResponse = user.toUserResponse()
-
         val isExist = Either.catch {
-            userRef.document(userResponse.id)
+            userRef.document(user.id)
                 .get()
                 .await()
                 .exists()
         }.bind()
 
-        ensure(isExist && userResponse.deletedAt == null) {
+        ensure(isExist && user.deletedAt == null) {
             IllegalStateException("User is not exist")
         }
 
@@ -92,8 +85,8 @@ internal class FirebaseUserRepository @Inject constructor(
             .toJavaInstant()
 
         Either.catch {
-            userRef.document(userResponse.id)
-                .set(userResponse.copy(deletedAt = Timestamp(Date.from(now))))
+            userRef.document(user.id)
+                .set(user.copy(deletedAt = Timestamp(Date.from(now))))
                 .await()
         }.bind()
     }.onLeft { Timber.e(it) }
@@ -107,8 +100,8 @@ internal class FirebaseUserRepository @Inject constructor(
             .whereEqualTo("deletedAt", null)
             .get()
             .await()
-            .toObjects<UserResponse>()
-            .parMap { it.toUser() }
+            .toObjects<User>()
+            .parMap { it }
     }.onLeft { Timber.e(it) }
 
     override fun userByUsernameFlow(username: String): Flow<List<User>> = userRef
@@ -117,6 +110,6 @@ internal class FirebaseUserRepository @Inject constructor(
         .endAt("$username\uf8ff")
         .whereEqualTo("deletedAt", null)
         .snapshots()
-        .map { snapshot -> snapshot.parMap { it.toObject<UserResponse>().toUser() } }
+        .map { snapshot -> snapshot.parMap { it.toObject<User>() } }
         .catch { Timber.e(it) }
 }

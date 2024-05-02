@@ -17,26 +17,22 @@
 package com.onirutla.flexchat.user.util
 
 import com.google.firebase.auth.FirebaseUser
-import com.onirutla.flexchat.user.data.model.UserResponse
-import com.onirutla.flexchat.user.domain.model.User
-import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
+import com.onirutla.flexchat.user.data.model.User
 
-fun FirebaseUser.toUser(conversationIds: List<String> = listOf()) = User(
+internal fun FirebaseUser.toUser(conversationIds: List<String> = listOf()) = User(
     id = uid,
     email = email.orEmpty(),
     conversationIds = conversationIds,
     password = "",
     isOnline = false,
-    createdAt = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
+    createdAt = null,
     username = displayName.orEmpty(),
     phoneNumber = phoneNumber.orEmpty(),
     photoProfileUrl = photoUrl.toString(),
     status = "Welcome to FlexChat"
 )
 
-internal fun FirebaseUser.toUserResponse(): UserResponse = UserResponse(
+internal fun FirebaseUser.toUserResponse(): User = User(
     id = uid,
     username = displayName.orEmpty(),
     email = email.orEmpty(),

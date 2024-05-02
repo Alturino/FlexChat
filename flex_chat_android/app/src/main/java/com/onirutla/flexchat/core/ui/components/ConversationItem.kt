@@ -29,17 +29,15 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.SubcomposeAsyncImage
-import com.onirutla.flexchat.conversation.domain.model.Conversation
-import com.onirutla.flexchat.conversation.domain.model.Message
+import com.google.firebase.Timestamp
+import com.onirutla.flexchat.conversation.data.model.Conversation
 import com.onirutla.flexchat.core.ui.theme.FlexChatTheme
-import com.onirutla.flexchat.core.ui.util.format
-import com.onirutla.flexchat.core.util.toLocalTimeString
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
 @Composable
-fun ConversationItem(
+internal fun ConversationItem(
     modifier: Modifier = Modifier,
     conversation: Conversation,
     onClick: () -> Unit,
@@ -83,10 +81,9 @@ private fun ConversationItemPreview() {
                 conversationName = "Duncan Bruce",
                 imageUrl = "https://www.google.com/#q=errem",
                 isGroup = false,
-                conversationMembers = listOf(),
 //                latestMessage = Message(),
-                createdAt = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
-                deletedAt = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
+                createdAt = Timestamp.now(),
+                deletedAt = Timestamp.now(),
             ),
             onClick = {}
         )
