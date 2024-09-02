@@ -19,6 +19,7 @@ package com.onirutla.flexchat.conversation.domain.repository
 import android.net.Uri
 import arrow.core.Either
 import com.onirutla.flexchat.conversation.data.model.Message
+import com.onirutla.flexchat.conversation.data.model.request.SendMessageRequest
 import kotlinx.coroutines.flow.Flow
 
 internal interface MessageRepository {
@@ -27,8 +28,8 @@ internal interface MessageRepository {
     suspend fun messageByConversationId(conversationId: String): Either<Throwable, List<Message>>
     fun messageByConversationIdFlow(conversationId: String): Flow<List<Message>>
     suspend fun messageByConversationMemberId(conversationMemberId: String): Either<Throwable, List<Message>>
-    suspend fun sendMessage(messageRequest: Message): Either<Throwable, Message>
-    suspend fun sendMessageWithAttachment(message: Message, uri: Uri): Either<Throwable, Unit>
+    suspend fun sendMessage(messageRequest: SendMessageRequest): Either<Throwable, Message>
+    suspend fun sendMessageWithAttachment(messageRequest: SendMessageRequest, uri: Uri): Either<Throwable, Unit>
     fun messageByUserIdFlow(userId: String): Flow<List<Message>>
     val observeMessage: Flow<List<Message>>
 }

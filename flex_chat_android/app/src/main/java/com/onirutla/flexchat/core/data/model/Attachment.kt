@@ -25,7 +25,6 @@ data class Attachment(
     val id: String = "",
     val userId: String,
     val conversationId: String,
-    val conversationMemberId: String,
     val messageId: String,
     val url: String,
     val senderName: String,

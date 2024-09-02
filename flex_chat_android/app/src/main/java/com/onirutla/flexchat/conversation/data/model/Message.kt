@@ -25,7 +25,6 @@ internal data class Message(
     val id: String = "",
     val userId: String = "",
     val conversationId: String = "",
-    val conversationMemberId: String = "",
     val senderName: String = "",
     val senderPhotoUrl: String = "",
     val messageBody: String = "",

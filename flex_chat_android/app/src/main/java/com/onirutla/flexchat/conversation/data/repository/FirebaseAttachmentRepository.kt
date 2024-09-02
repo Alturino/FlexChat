@@ -28,7 +28,7 @@ import com.google.firebase.firestore.snapshots
 import com.google.firebase.firestore.toObjects
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.storageMetadata
-import com.onirutla.flexchat.conversation.data.model.AttachmentArgs
+import com.onirutla.flexchat.conversation.data.model.request.AttachmentRequest
 import com.onirutla.flexchat.conversation.domain.repository.AttachmentRepository
 import com.onirutla.flexchat.core.data.model.Attachment
 import com.onirutla.flexchat.core.domain.model.error_state.CreateAttachmentError
@@ -48,10 +48,10 @@ internal class FirebaseAttachmentRepository @Inject constructor(
     private val attachmentStorage = firebaseStorage.reference
 
     override suspend fun createAttachment(
-        attachmentArgs: AttachmentArgs,
+        attachmentRequest: AttachmentRequest,
         onProgress: (percent: Double, bytesTransferred: Long, totalByteCount: Long) -> Unit,
     ): Either<CreateAttachmentError, Unit> = either {
-        with(attachmentArgs) {
+        with(attachmentRequest) {
             ensure(userId.isNotEmpty() or userId.isNotBlank()) {
                 CreateAttachmentError.UserIdEmptyOrBlank
             }
@@ -66,10 +66,10 @@ internal class FirebaseAttachmentRepository @Inject constructor(
             }
         }
 
-        val file = attachmentArgs.uri.toFile()
+        val file = attachmentRequest.uri.toFile()
         val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(file.extension)
         val metadata = storageMetadata {
-            with(attachmentArgs) {
+            with(attachmentRequest) {
                 contentType = mimeType
                 setCustomMetadata("userId", userId)
                 setCustomMetadata("conversationId", conversationId)
@@ -78,7 +78,7 @@ internal class FirebaseAttachmentRepository @Inject constructor(
         }
         val childRef = attachmentStorage.child("attachments/${file.name}")
         Either.catch {
-            childRef.putFile(attachmentArgs.uri, metadata)
+            childRef.putFile(attachmentRequest.uri, metadata)
                 .addOnProgressListener {
                     onProgress(
                         it.bytesTransferred.toDouble() / it.totalByteCount.toDouble(),
@@ -100,12 +100,11 @@ internal class FirebaseAttachmentRepository @Inject constructor(
         }
 
         val attachmentId = attachmentRef.document().id
-        val attachment = with(attachmentArgs) {
+        val attachment = with(attachmentRequest) {
             Attachment(
                 id = attachmentId,
                 userId = userId,
                 conversationId = conversationId,
-                conversationMemberId = conversationMemberId,
                 messageId = messageId,
                 mimeType = mimeType.orEmpty(),
                 senderName = senderName,

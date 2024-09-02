@@ -58,10 +58,12 @@ internal class FirebaseUserRepository @Inject constructor(
     }.onLeft { Timber.e(it) }
 
     override suspend fun getUserById(id: String): Either<Throwable, User> = either {
-        val user = userRef.document(id)
-            .get()
-            .await()
-            .toObject<User>()
+        val user = Either.catch {
+            userRef.document(id)
+                .get()
+                .await()
+                .toObject<User>()
+        }.bind()
         ensureNotNull(user) { Throwable("User is not exist") }
         ensure(user.deletedAt == null) { Throwable("User is not exist") }
         user

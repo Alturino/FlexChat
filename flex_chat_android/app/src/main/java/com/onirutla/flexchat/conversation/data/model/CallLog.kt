@@ -16,10 +16,12 @@
 
 package com.onirutla.flexchat.conversation.data.model
 
+import com.google.firebase.firestore.IgnoreExtraProperties
 import com.google.firebase.firestore.ServerTimestamp
 import java.sql.Timestamp
 
-data class CallLogResponse(
+@IgnoreExtraProperties
+data class CallLog(
     val id: String = "",
     val duration: Int = 0,
     @ServerTimestamp

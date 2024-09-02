@@ -25,12 +25,14 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.snapshots
 import com.google.firebase.firestore.toObject
 import com.google.firebase.firestore.toObjects
-import com.onirutla.flexchat.conversation.data.model.AttachmentArgs
 import com.onirutla.flexchat.conversation.data.model.Conversation
 import com.onirutla.flexchat.conversation.data.model.Message
+import com.onirutla.flexchat.conversation.data.model.request.AttachmentRequest
+import com.onirutla.flexchat.conversation.data.model.request.SendMessageRequest
 import com.onirutla.flexchat.conversation.domain.repository.AttachmentRepository
 import com.onirutla.flexchat.conversation.domain.repository.MessageRepository
 import com.onirutla.flexchat.core.util.FirebaseCollections
+import com.onirutla.flexchat.user.data.model.User
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
@@ -48,6 +50,7 @@ internal class FirebaseMessageRepository @Inject constructor(
 
     private val messageRef = firestore.collection(FirebaseCollections.MESSAGES)
     private val conversationRef = firestore.collection(FirebaseCollections.CONVERSATIONS)
+    private val userRef = firestore.collection(FirebaseCollections.USERS)
 
     override suspend fun messageByUserId(
         userId: String,
@@ -63,7 +66,6 @@ internal class FirebaseMessageRepository @Inject constructor(
             .get()
             .await()
             .toObject<Message>()!!
-
     }
 
     override suspend fun messageByConversationId(
@@ -95,11 +97,9 @@ internal class FirebaseMessageRepository @Inject constructor(
 
     }
 
-    override suspend fun sendMessage(messageRequest: Message): Either<Throwable, Message> = either {
-        with(messageRequest) {
-            ensure(conversationMemberId.isNotEmpty() or conversationMemberId.isNotBlank()) {
-                IllegalArgumentException("conversationMemberId should not be empty or blank")
-            }
+    override suspend fun sendMessage(messageRequest: SendMessageRequest): Either<Throwable, Message> =
+        either {
+            with(messageRequest) {
             ensure(conversationId.isNotEmpty() or conversationId.isNotBlank()) {
                 IllegalArgumentException("conversationId should not be empty or blank")
             }
@@ -114,24 +114,33 @@ internal class FirebaseMessageRepository @Inject constructor(
             }
         }
 
-
-        val id = if (messageRequest.id.isNotEmpty() or messageRequest.id.isNotBlank()) {
-            messageRequest.id
-        } else {
-            messageRef.document().id
+            val messageId = messageRef.document().id
+            val message = with(messageRequest) {
+                Message(
+                    id = messageId,
+                    conversationId = conversationId,
+                    senderName = senderName,
+                    userId = userId,
+                    messageBody = messageBody,
+                    senderPhotoUrl = senderPhotoUrl,
+                )
         }
-
-        val message = messageRequest.copy(id = id)
         Either.catch {
             firestore.runTransaction {
+                it.set(messageRef.document(messageId), message)
 
-                val conversation = it.get(conversationRef.document(message.conversationId))
+                val user = it.get(userRef.document(messageRequest.userId))
+                    .toObject<User>()!!
+                it.set(
+                    userRef.document(messageRequest.userId),
+                    user.copy(messageIds = user.messageIds + listOf(messageId))
+                )
+
+                val conversation = it.get(conversationRef.document(messageRequest.conversationId))
                     .toObject<Conversation>()!!
-
-                it.set(messageRef.document(id), message)
                 it.set(
                     conversationRef.document(conversation.id),
-                    conversation.copy(messageIds = conversation.messageIds + listOf(message.id))
+                    conversation.copy(messageIds = conversation.messageIds + listOf(messageId))
                 )
             }.await()
         }.onLeft { Timber.e(it) }
@@ -140,21 +149,20 @@ internal class FirebaseMessageRepository @Inject constructor(
     }
 
     override suspend fun sendMessageWithAttachment(
-        message: Message,
+        messageRequest: SendMessageRequest,
         uri: Uri,
     ): Either<Throwable, Unit> = either {
-        val messageId = sendMessage(messageRequest = message)
+        val messageId = sendMessage(messageRequest = messageRequest)
             .onLeft { Timber.e(it) }
             .bind()
             .id
         attachmentRepository.createAttachment(
-            AttachmentArgs(
+            AttachmentRequest(
                 uri = uri,
                 messageId = messageId,
-                userId = message.userId,
-                conversationId = message.conversationId,
-                conversationMemberId = message.conversationMemberId,
-                senderName = message.senderName
+                userId = messageRequest.userId,
+                conversationId = messageRequest.conversationId,
+                senderName = messageRequest.senderName
             ),
             onProgress = { _, _, _ -> },
         ).onLeft { Timber.e(it.errorMessage) }

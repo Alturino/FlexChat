@@ -45,11 +45,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.onirutla.flexchat.R
-import com.onirutla.flexchat.ui.components.EmailField
+import com.onirutla.flexchat.core.ui.components.EmailField
+import com.onirutla.flexchat.core.ui.components.UsernameField
+import com.onirutla.flexchat.core.ui.theme.FlexChatTheme
 import com.onirutla.flexchat.ui.components.GoogleIconButton
 import com.onirutla.flexchat.ui.components.PasswordField
-import com.onirutla.flexchat.ui.components.UsernameField
-import com.onirutla.flexchat.core.ui.theme.FlexChatTheme
 
 @Composable
 fun RegisterScreen(
@@ -58,11 +58,11 @@ fun RegisterScreen(
     onEvent: (RegisterScreenEvent) -> Unit,
     onUiEvent: (RegisterScreenUiEvent) -> Unit,
 ) {
-    LaunchedEffect(key1 = state.isRegisterSuccessful, block = {
+    LaunchedEffect(state.isRegisterSuccessful) {
         if (state.isRegisterSuccessful == true) {
             onUiEvent(RegisterScreenUiEvent.NavigateToMainScreen)
         }
-    })
+    }
     Scaffold(
         modifier = modifier
             .fillMaxSize()
@@ -113,7 +113,7 @@ fun RegisterScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .wrapContentHeight(),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
                 horizontalAlignment = Alignment.Start,
             ) {
                 UsernameField(

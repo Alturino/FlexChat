@@ -16,13 +16,12 @@
 
 package com.onirutla.flexchat.conversation.data.model
 
-import android.net.Uri
+import com.google.firebase.firestore.IgnoreExtraProperties
 
-data class AttachmentArgs(
-    val senderName: String,
-    val userId: String,
-    val conversationId: String,
-    val conversationMemberId: String,
-    val messageId: String,
-    val uri: Uri,
+@IgnoreExtraProperties
+internal data class OnGoingCall(
+    val conversationId: String = "",
+    val sessionDescription: String = "",
+    val signalingCommand: String = "",
+    val callInitiatorId: String = "",
 )

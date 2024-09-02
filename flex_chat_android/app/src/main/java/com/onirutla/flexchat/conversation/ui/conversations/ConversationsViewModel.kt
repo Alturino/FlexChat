@@ -18,7 +18,6 @@ package com.onirutla.flexchat.conversation.ui.conversations
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import arrow.core.getOrElse
 import arrow.fx.coroutines.parMap
 import com.google.firebase.messaging.FirebaseMessaging
 import com.onirutla.flexchat.auth.domain.repository.AuthRepository
@@ -27,6 +26,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNot
 import kotlinx.coroutines.flow.flatMapLatest
@@ -34,7 +34,6 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -81,13 +80,10 @@ internal class ConversationsViewModel @Inject constructor(
     }
 
     operator fun invoke() {
-        viewModelScope.launch {
-            val conversations = conversationRepository.conversationByUserId(_state.value.userId)
-                .onLeft { Timber.e(it) }
-                .onRight { Timber.d("$it") }
-                .getOrElse { listOf() }
-            _state.update { it.copy(conversations = conversations) }
-        }
+        conversationRepository.conversationsByUserIdFlow(_state.value.userId)
+            .onEach { conversations -> _state.update { it.copy(conversations = conversations) } }
+            .catch { Timber.e(it) }
+            .launchIn(viewModelScope)
     }
-
 }
+

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.onirutla.flexchat.ui.components
+package com.onirutla.flexchat.core.ui.components
 
 import androidx.compose.foundation.text.KeyboardActionScope
 import androidx.compose.foundation.text.KeyboardActions

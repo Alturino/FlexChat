@@ -44,7 +44,7 @@ import androidx.constraintlayout.compose.Dimension
 import coil.compose.AsyncImage
 import com.onirutla.flexchat.R
 import com.onirutla.flexchat.core.ui.theme.FlexChatTheme
-import com.onirutla.flexchat.ui.components.CaptionField
+import com.onirutla.flexchat.core.ui.components.CaptionField
 import com.onirutla.flexchat.ui.components.OnImageIconButton
 
 @Composable
@@ -91,10 +91,10 @@ fun ConfirmationSendPhotoScreen(
                 OnImageIconButton(onClick = { onUiEvent(ConfirmationSendPhotoUiEvent.OnClearClick) }) {
                     Icon(imageVector = Icons.Rounded.Clear, contentDescription = null)
                 }
-                // TODO: Implement editing photo like crop, add text, and draw on the image
-                Row {
-
-                }
+//                // TODO: Implement editing photo like crop, add text, and draw on the image
+//                Row {
+//
+//                }
             }
             Row(
                 modifier = Modifier

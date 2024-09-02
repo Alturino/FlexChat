@@ -1,0 +1,51 @@
+users
+  id
+  conversationIds
+  callLogIds
+  messageIds
+  latestReadMessageId
+  createdAt
+  deletedAt
+  email
+  friendWithUserIds
+  isOnline
+  isPrivate
+  phoneNumber
+  photoProfileUrl
+  unreadMessageIds
+  username
+  ongoingCallId
+
+conversations
+  id
+  ongoingCallId
+  attachmentIds
+  messageIds
+  callLogIds
+  createdAt
+  deletedAt
+  userIds
+
+attachments
+  id
+  conversationId
+  userId
+  url
+  createdAt
+  deletedAt
+
+call_logs
+  id
+  conversationId
+  userId
+  createdAt
+
+ongoing_calls
+
+messages
+  id
+  userId
+  conversationId
+  createdAt
+  deletedAt
+  updatedAt

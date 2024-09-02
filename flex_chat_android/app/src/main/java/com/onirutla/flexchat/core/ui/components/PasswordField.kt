@@ -95,7 +95,7 @@ fun PasswordField(
     showBackground = true
 )
 @Composable
-private fun PasswordFieldPreview() {
+private fun ErrorPasswordFieldPreview() {
     FlexChatTheme {
         PasswordField(
             isPasswordVisible = true,
@@ -106,6 +106,30 @@ private fun PasswordFieldPreview() {
             password = "asdfasdf",
             errorMessage = "you're so wrong",
             isError = true,
+        )
+    }
+}
+
+@Preview(
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL
+)
+@Preview(
+    uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL,
+    showBackground = true
+)
+@Composable
+private fun PasswordFieldPreview() {
+    FlexChatTheme {
+        PasswordField(
+            isPasswordVisible = true,
+            keyboardOptions = KeyboardOptions(),
+            keyboardActions = KeyboardActions(),
+            onPasswordChange = {},
+            onPasswordVisibleChange = {},
+            password = "asdfasdf",
+            errorMessage = "",
+            isError = false,
         )
     }
 }

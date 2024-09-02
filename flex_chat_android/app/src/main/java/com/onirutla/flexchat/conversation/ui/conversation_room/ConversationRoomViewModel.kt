@@ -20,15 +20,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.FirebaseFirestore
 import com.onirutla.flexchat.auth.domain.repository.AuthRepository
-import com.onirutla.flexchat.conversation.data.model.Message
+import com.onirutla.flexchat.conversation.data.model.request.SendMessageRequest
 import com.onirutla.flexchat.conversation.domain.repository.ConversationRepository
 import com.onirutla.flexchat.conversation.domain.repository.MessageRepository
 import com.onirutla.flexchat.user.data.model.User
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNot
 import kotlinx.coroutines.flow.flatMapLatest
@@ -53,24 +53,23 @@ internal class ConversationRoomViewModel @Inject constructor(
     val state = _state.asStateFlow()
 
     operator fun invoke(conversationId: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            conversationRepository.getConversationById(conversationId)
-                .onLeft { Timber.e(it) }
-                .onRight { conversation ->
-                    _state.update { state ->
-                        state.copy(
-                            conversation = conversation.copy(
-                                // TODO: Refactor this
-                                // To not include current user, username on one on one chat
-                                conversationName = conversation.conversationName
-                                    .split(" ")
-                                    .filterNot { it == _state.value.currentUser.username }
-                                    .joinToString("")
-                            )
+        conversationRepository.conversationByIdFlow(conversationId)
+            .onEach { conversation ->
+                _state.update { state ->
+                    state.copy(
+                        conversation = conversation.copy(
+                            // TODO: Refactor this
+                            // To not include current user, username on one on one chat
+                            conversationName = conversation.conversationName
+                                .split(", ")
+                                .filterNot { it == _state.value.currentUser.username }
+                                .joinToString("")
                         )
-                    }
+                    )
                 }
-        }
+            }
+            .catch { Timber.e(it) }
+            .launchIn(viewModelScope)
     }
 
     init {
@@ -101,7 +100,7 @@ internal class ConversationRoomViewModel @Inject constructor(
 
             ConversationRoomEvent.OnDraftMessageSend -> {
                 viewModelScope.launch {
-                    val message = Message(
+                    val message = SendMessageRequest(
                         userId = _state.value.currentUser.id,
                         conversationId = _state.value.conversation.id,
                         senderName = _state.value.currentUser.username,

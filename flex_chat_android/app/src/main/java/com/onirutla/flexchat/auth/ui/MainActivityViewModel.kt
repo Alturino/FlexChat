@@ -22,7 +22,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.snapshots
 import com.google.firebase.firestore.toObject
 import com.onirutla.flexchat.auth.domain.repository.AuthRepository
-import com.onirutla.flexchat.conversation.data.model.OnGoingCallResponse
+import com.onirutla.flexchat.conversation.data.model.OnGoingCall
 import com.onirutla.flexchat.conversation.domain.repository.ConversationRepository
 import com.onirutla.flexchat.core.util.FirebaseCollections
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -55,11 +55,11 @@ internal class MainActivityViewModel @Inject constructor(
         .flatMapLatest { conversationRepository.conversationsByUserIdFlow(it) }
 
 
-    fun test(onGoingCallId: String): Flow<OnGoingCallResponse> {
-        return firestore.collection(FirebaseCollections.ONGOING_CALL)
+    fun test(onGoingCallId: String): Flow<OnGoingCall> {
+        return firestore.collection(FirebaseCollections.ONGOING_CALLS)
             .document(onGoingCallId)
             .snapshots()
-            .mapNotNull { it.toObject<OnGoingCallResponse>() }
+            .mapNotNull { it.toObject<OnGoingCall>() }
     }
 //    val incomingCall = combine(conversations, ongoingCalls) { conversations, onGoingCalls ->
 //        onGoingCalls.firstNotNullOfOrNull { conve }

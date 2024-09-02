@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package com.onirutla.flexchat.core.util
+package com.onirutla.flexchat.conversation.data.model.request
 
-object FirebaseCollections {
-    const val CONVERSATIONS = "conversations"
-    const val USERS = "users"
-    const val MESSAGES = "messages"
-    const val ATTACHMENTS = "attachments"
-    const val ONGOING_CALLS = "ongoing_calls"
-    const val CALL_LOGS = "call_logs"
-}
+import android.net.Uri
+
+data class AttachmentRequest(
+    val senderName: String,
+    val userId: String,
+    val conversationId: String,
+    val messageId: String,
+    val uri: Uri,
+)

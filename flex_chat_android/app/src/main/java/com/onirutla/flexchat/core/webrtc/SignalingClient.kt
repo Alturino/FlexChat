@@ -19,7 +19,7 @@ package com.onirutla.flexchat.core.webrtc
 import arrow.core.Either
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.toObject
-import com.onirutla.flexchat.conversation.data.model.OnGoingCallResponse
+import com.onirutla.flexchat.conversation.data.model.OnGoingCall
 import com.onirutla.flexchat.core.util.FirebaseCollections
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -42,7 +42,7 @@ class SignalingClient(
     private val firestore: FirebaseFirestore,
 ) {
     private val signalingScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    private val ongoingCallRef = firestore.collection(FirebaseCollections.ONGOING_CALL)
+    private val ongoingCallRef = firestore.collection(FirebaseCollections.ONGOING_CALLS)
 
     // session flow to send information about the session state to the subscribers
     private val _sessionStateFlow = MutableStateFlow(WebRTCSessionState.Offline)
@@ -60,7 +60,7 @@ class SignalingClient(
                 ongoingCallRef.document(it)
                     .get()
                     .await()
-                    .toObject<OnGoingCallResponse>()
+                    .toObject<OnGoingCall>()
                     ?.sessionDescription
             }.filterNot { it.isBlank() or it.isEmpty() }
             .onEach {
@@ -97,13 +97,13 @@ class SignalingClient(
         signalingScope.launch {
             Either.catch {
                 firestore.runTransaction {
-                    val onGoingCallResponse = OnGoingCallResponse(
+                    val onGoingCall = OnGoingCall(
                         conversationId = conversationId,
                         sessionDescription = sessionDescription,
                         signalingCommand = signalingCommand.name,
                         callInitiatorId = callInitiatorId
                     )
-                    it.set(ongoingCallRef.document(conversationId), onGoingCallResponse)
+                    it.set(ongoingCallRef.document(conversationId), onGoingCall)
                 }.await()
             }.onLeft { Timber.e(it) }
                 .onRight { Timber.d("Successfully sending the signaling with signalingCommand: $signalingCommand, sessionDescription: $sessionDescription, conversationId: $conversationId") }
@@ -129,7 +129,7 @@ class SignalingClient(
         _sessionStateFlow.update { WebRTCSessionState.Offline }
         firestore.runTransaction {
             it.delete(
-                firestore.collection(FirebaseCollections.ONGOING_CALL)
+                firestore.collection(FirebaseCollections.ONGOING_CALLS)
                     .document(conversationIdStateFlow.value)
             )
         }

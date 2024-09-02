@@ -25,12 +25,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Call
-import androidx.compose.material.icons.rounded.CallEnd
-import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -43,6 +37,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.onirutla.flexchat.R
+import com.onirutla.flexchat.core.ui.components.AnswerCallIconButton
+import com.onirutla.flexchat.core.ui.components.DeclineCallIconButton
 import com.onirutla.flexchat.core.ui.theme.FlexChatTheme
 
 @Composable
@@ -78,24 +74,8 @@ fun IncomingCallScreen(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceAround,
         ) {
-            FilledIconButton(
-                onClick = { onEvent(IncomingCallScreenEvent.OnDecline) },
-                colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                    contentColor = MaterialTheme.colorScheme.error
-                )
-            ) {
-                Icon(imageVector = Icons.Rounded.CallEnd, contentDescription = null)
-            }
-            FilledIconButton(
-                onClick = { onEvent(IncomingCallScreenEvent.OnAnswer) },
-                colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.primary,
-                )
-            ) {
-                Icon(imageVector = Icons.Rounded.Call, contentDescription = null)
-            }
+            DeclineCallIconButton(onClick = { onEvent(IncomingCallScreenEvent.OnDecline) })
+            AnswerCallIconButton(onClick = { onEvent(IncomingCallScreenEvent.OnAnswer) })
         }
     }
 }

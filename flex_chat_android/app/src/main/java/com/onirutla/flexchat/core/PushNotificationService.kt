@@ -52,7 +52,7 @@ import timber.log.Timber
 import javax.inject.Inject
 
 @AndroidEntryPoint
-internal class ChatNotificationService : FirebaseMessagingService() {
+internal class PushNotificationService : FirebaseMessagingService() {
 
     @Inject
     lateinit var conversationRepository: ConversationRepository
@@ -94,7 +94,7 @@ internal class ChatNotificationService : FirebaseMessagingService() {
             if (message.data.containsKey("notificationType") && message.data["notificationType"] == NotificationType.Call.name) {
                 val conversationId = message.data["conversationId"].orEmpty()
                 val callInitiatorId = message.data["callInitiatorId"].orEmpty()
-                val conversation = conversationRepository.getConversationById(conversationId)
+                val conversation = conversationRepository.conversationById(conversationId)
                     .onLeft { Timber.e(it) }
                     .getOrElse { throw it }
                 Timber.d("currentUserId: ${currentUser.id}, callInitiatorId: $callInitiatorId, conversationId: $conversationId, conversation: $conversation")

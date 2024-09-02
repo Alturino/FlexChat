@@ -108,7 +108,6 @@ private fun ChatBubblePreview() {
             message = Message(
                 id = "ornare",
                 conversationId = "suas",
-                conversationMemberId = "suspendisse",
                 userId = "viris",
                 senderName = "Mauricio Barron",
                 senderPhotoUrl = "https://www.google.com/#q=elitr",

@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package com.onirutla.flexchat.conversation.data.model
+package com.onirutla.flexchat.conversation.data.model.request
 
-internal data class OnGoingCallResponse(
-    val conversationId: String = "",
-    val sessionDescription: String = "",
-    val signalingCommand: String = "",
-    val callInitiatorId: String = "",
+data class SendMessageRequest(
+    val userId: String,
+    val conversationId: String,
+    val senderName: String,
+    val senderPhotoUrl: String,
+    val messageBody: String,
 )
